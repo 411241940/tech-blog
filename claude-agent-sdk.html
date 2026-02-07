@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用 Claude Agent SDK 构建 Agents | 技术博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center}
+header h1{font-size:2.5em;margin-bottom:10px}
+header p{opacity:0.9}
+nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
+nav a{margin-right:25px;text-decoration:none;color:#667eea;font-weight:600}
+nav a:hover{color:#764ba2}
+article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+article h1{color:#667eea;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #667eea}
+article h2{color:#764ba2;margin:35px 0 15px}
+article h3{color:#444;margin:25px 0 10px}
+article p{margin:15px 0}
+article a{color:#667eea;text-decoration:none}
+article a:hover{text-decoration:underline}
+article code{background:#f4f4f4;padding:3px 8px;border-radius:4px;font-family:monospace}
+article pre{background:#2d3748;color:#f8f8f2;padding:20px;border-radius:8px;overflow-x:auto;margin:20px 0}
+article pre code{background:none;color:inherit;padding:0}
+article ul,article ol{margin:15px 0 15px 30px}
+article li{margin:8px 0}
+article blockquote{border-left:4px solid #667eea;padding:15px 20px;margin:20px 0;background:#f7f7fa;border-radius:0 8px 8px 0}
+article table{width:100%;border-collapse:collapse;margin:20px 0}
+article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
+article th{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+article tr:nth-child(even){background:#f7f7fa}
+article tr:hover{background:#edf2f7}
+
+/* 纯HTML图表样式 */
+.chart{background:#f8f9fa;padding:30px;margin:20px 0;border-radius:12px;text-align:center}
+.chart-row{display:flex;justify-content:center;align-items:center;gap:20px;margin:15px 0;flex-wrap:wrap}
+.chart-node{padding:15px 25px;border-radius:8px;font-weight:500;min-width:120px}
+.chart-arrow{font-size:24px;color:#667eea}
+.chart-subtitle{font-size:14px;color:#666;margin:10px 0;font-weight:bold}
+
+/* 节点颜色变体 */
+.node-green{background:#28a745;color:white;border:2px solid #28a745}
+.node-blue{background:#007bff;color:white;border:2px solid #007bff}
+.node-purple{background:#6f42c1;color:white;border:2px solid #6f42c1}
+.node-yellow{background:#ffc107;color:#333;border:2px solid #ffc107}
+.node-red{background:#dc3545;color:white;border:2px solid #dc3545}
+.node-orange{background:#fd7e14;color:white;border:2px solid #fd7e14}
+.node-gray{background:#6c757d;color:white;border:2px solid #6c757d}
+.node-white{background:white;color:#333;border:2px solid #ddd}
+
+/* 流程图样式 */
+.flowchart{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px}
+.flow-row{display:flex;align-items:center;gap:15px;flex-wrap:wrap;justify-content:center}
+.flow-node{padding:12px 20px;border-radius:6px;font-size:14px}
+.flow-arrow{font-size:20px;color:#667eea;font-weight:bold}
+
+/* 垂直流程 */
+.flow-vertical{display:flex;flex-direction:column;align-items:center;gap:10px}
+.flow-vertical .flow-arrow{transform:rotate(90deg)}
+
+/* 卡片布局 */
+.card-container{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.card{background:white;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);min-width:150px}
+.card-title{font-weight:bold;margin-bottom:10px;color:#667eea}
+.card-content{font-size:14px;color:#666}
+.card-icon{font-size:30px;margin-bottom:10px}
+
+/* 步骤列表 */
+.step-list{list-style:none;padding:0;margin:20px 0}
+.step-list li{display:flex;align-items:center;gap:15px;padding:10px 0;border-bottom:1px solid #eee}
+.step-number{width:30px;height:30px;background:#667eea;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold}
+
+/* 对比框 */
+.comparison-box{display:flex;gap:20px;margin:20px 0}
+.comparison-item{flex:1;padding:20px;border-radius:10px}
+.comparison-item.good{background:#d4edda;border:2px solid #28a745}
+.comparison-item.bad{background:#f8d7da;border:2px solid #dc3545}
+.comparison-item.neutral{background:#e9ecef;border:2px solid #6c757d}
+
+/* 框架卡片 */
+.framework-card{background:white;border:2px solid #e9ecef;border-radius:10px;padding:15px;text-align:center;flex:1;min-width:180px}
+.framework-name{font-weight:bold;color:#667eea;margin-bottom:8px}
+.framework-desc{font-size:12px;color:#666}
+
+/* 对比表格 */
+.comparison-table{margin:20px 0}
+.comparison-table th:first-child{width:30%}
+.comparison-table th:last-child{width:70%}
+
+footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
+@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+</style>
+</head>
+<body>
+<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
+<nav class="container"><a href="index.html">🏠 首页</a><a href="building-effective-agents.html">🤖 Effective Agents</a><a href="effective-context-engineering.html">📦 Context Engineering</a><a href="contextual-retrieval.html">🔍 Contextual Retrieval</a><a href="claude-agent-sdk.html">🛠️ Claude SDK</a></nav>
+<main class="container"><article><h1>使用 Claude Agent SDK 构建 Agents</h1>
+
+<blockquote>作者：Thariq Shihipar (Anthropic)</blockquote>
+<blockquote>阅读时间：2026-02-07</blockquote>
+<blockquote>翻译：HinnBot</blockquote>
+
+<hr/>
+
+<h2>一、引言</h2>
+
+<p>去年，我们与客户分享了<a href="building-effective-agents.html">构建有效 Agents 的经验</a>。之后，我们发布了 <a href="https://claude.com/product/claude-code" target="_blank">Claude Code</a>，这是一个 Agentic 编码解决方案，最初用于支持 Anthropic 的开发者生产力。</p>
+
+<p>在过去的几个月里，Claude Code 已经成为远不止编码工具的存在。在 Anthropic，我们用它来进行深度研究、视频创作、记笔记，以及无数其他非编码应用。</p>
+
+<p><strong>核心变化</strong>：Claude Code SDK 现在更名为 <strong>Claude Agent SDK</strong>，以反映其更广泛的愿景。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">Claude Code SDK → Claude Agent SDK</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-purple">Claude Code SDK</div>
+            <span class="flow-arrow">→ 重命名</span>
+            <div class="flow-node node-blue">Claude Agent SDK</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-green">通用 Agent 框架</div>
+        </div>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>愿景</strong>：Claude Agent SDK 可以为许多其他类型的 Agent 提供动力！
+</blockquote>
+
+<hr/>
+
+<h2>二、给 Claude 一台计算机</h2>
+
+<p><strong>核心设计原则</strong>：Claude 需要与程序员每天使用的相同工具。它需要能够找到代码库中的适当文件、编写和编辑文件、 lint 代码、运行代码、调试。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">赋予 Claude 计算机能力</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">基础 Claude</div>
+            <span class="flow-arrow">+</span>
+            <div class="flow-node node-green">终端访问</div>
+            <span class="flow-arrow">+</span>
+            <div class="flow-node node-purple">文件操作</div>
+            <span class="flow-arrow">+</span>
+            <div class="flow-node node-orange">命令执行</div>
+        </div>
+        <div style="margin-top:15px;">
+            <span class="flow-arrow">↓</span>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-blue" style="font-size:16px;">像程序员一样工作的 Claude</div>
+        </div>
+    </div>
+</div>
+
+<p>通过给予 Claude 访问用户计算机的能力（通过终端），它拥有了像程序员一样编写代码所需的一切。</p>
+
+<blockquote>
+🎯 <strong>关键洞察</strong>：赋予 Agent 计算机访问权限 = 构建通用目的的 Agent！
+</blockquote>
+
+<hr/>
+
+<h2>三、创建新型 Agents</h2>
+
+<p>赋予 Claude 一台计算机解锁了构建比以前更有效的 Agent 的能力。</p>
+
+<div class="card-container">
+    <div class="card">
+        <div class="card-icon">💰</div>
+        <div class="card-title">金融 Agent</div>
+        <div class="card-content">理解投资组合、评估投资、访问 API、运行计算</div>
+    </div>
+    <div class="card">
+        <div class="card-icon">📅</div>
+        <div class="card-title">个人助理 Agent</div>
+        <div class="card-content">预订旅行、管理日程、安排会议、连接内部数据</div>
+    </div>
+    <div class="card">
+        <div class="card-icon">🎧</div>
+        <div class="card-title">客户支持 Agent</div>
+        <div class="card-content">处理高模糊性用户请求、收集数据、连接 API</div>
+    </div>
+    <div class="card">
+        <div class="card-icon">🔍</div>
+        <div class="card-title">深度研究 Agent</div>
+        <div class="card-content">在大型文档集中进行全面研究、交叉引用数据</div>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>核心</strong>：SDK 提供了构建任何工作流程自动化的 Agent 的基本原语！
+</blockquote>
+
+<hr/>
+
+<h2四、构建 Agent 循环</h2>
+
+<p>在 Claude Code 中，Claude 通常在特定的反馈循环中操作：</p>
+
+<div class="chart">
+    <div class="chart-subtitle">Agent 循环</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">1. 收集上下文</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">2. 采取行动</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">3. 验证工作</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-orange">4. 重复</div>
+        </div>
+    </div>
+</div>
+
+<p>这是思考其他 Agent 及其应该具备的能力的有用方式。</p>
+
+<hr/>
+
+<h2>五、收集上下文</h2>
+
+<p>开发 Agent 时，你希望给它不仅仅是提示：它需要能够获取和更新自己的上下文。</p>
+
+<h3>5.1 Agentic 搜索和文件系统</h3>
+
+<p>文件系统代表可以拉入模型上下文的信息。当 Claude 遇到大型文件时（如日志或用户上传的文件），它会决定使用 bash 脚本加载到上下文中。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">Agentic 搜索</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">大型文件</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">Claude 决定</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">grep/tail 加载</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-gray">文件夹结构 = 上下文工程</div>
+        </div>
+    </div>
+</div>
+
+<h3>5.2 语义搜索</h3>
+
+<table>
+<tr><th>特性</th><th>Agentic 搜索</th><th>语义搜索</th></tr>
+<tr><td>速度</td><td>较慢</td><td>✅ 更快</td></tr>
+<tr><td>准确度</td><td>✅ 更准确</td><td>较低</td></tr>
+<tr><td>维护</td><td>✅ 简单</td><td>困难</td></tr>
+<tr><td>透明度</td><td>✅ 高</td><td>低</td></tr>
+</table>
+
+<blockquote>
+💡 <strong>建议</strong>：从 Agentic 搜索开始，只有在需要更快结果或更多变化时才添加语义搜索。
+</blockquote>
+
+<h3>5.3 子 Agents</h3>
+
+<p>Claude Agent SDK 默认支持子 Agents。有两个主要用途：</p>
+
+<div class="chart">
+    <div class="chart-subtitle">子 Agents 的价值</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-green">并行化</div>
+            <span class="flow-arrow">vs</span>
+            <div class="flow-node node-blue">上下文管理</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div style="font-size:13px;color:#666;">同时运行多个子 Agent</div>
+            <div style="font-size:13px;color:#666;margin-top:5px;">隔离上下文，只返回相关信息</div>
+        </div>
+    </div>
+</div>
+
+<h3>5.4 压缩（Compaction）</h3>
+
+<p>当 Agent 长时间运行时，上下文维护变得关键。Claude Agent SDK 的 compact 功能会在上下文限制接近时自动总结之前的消息。</p>
+
+<div class="comparison-item good">
+    <strong>✅ 效果</strong>：Agent 不会耗尽上下文
+</div>
+
+<hr/>
+
+<h2>六、采取行动</h2>
+
+<p>一旦收集了上下文，你需要给 Agent 灵活的行动方式。</p>
+
+<h3>6.1 工具（Tools）</h3>
+
+<p>工具是 Agent 执行的主要构建块。工具在 Claude 的上下文中很突出，使其成为完成任务时考虑的主要操作。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">工具设计原则</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-purple">工具</div>
+            <span class="flow-arrow">= 主要操作</span>
+            <div class="flow-node node-blue">Claude 考虑</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-orange">最大化上下文效率</div>
+        </div>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>最佳实践</strong>：工具应该是你希望 Agent 采取的主要操作。
+</blockquote>
+
+<h3>6.2 Bash 和脚本</h3>
+
+<p>Bash 作为通用工具很有用，允许 Agent 使用计算机进行灵活的工作。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">Bash 使用示例</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">下载 PDF</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">转换为文本</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">搜索信息</div>
+        </div>
+    </div>
+</div>
+
+<h3>6.3 代码生成</h3>
+
+<p>Claude Agent SDK 擅长代码生成。代码是精确、可组合、可无限重用的，是可靠执行复杂操作的理想输出。</p>
+
+<div class="comparison-item good">
+    <strong>示例</strong>：Claude AI 的文件创建功能完全依赖代码生成。Claude 编写 Python 脚本来创建 Excel 电子表格、PowerPoint 演示文稿和 Word 文档。
+</div>
+
+<h3>6.4 MCP（Model Context Protocol）</h3>
+
+<p><a href="https://modelcontextprotocol.io/" target="_blank">MCP</a> 提供与外部服务的标准化集成，自动处理身份验证和 API 调用。</p>
+
+<div class="card-container">
+    <div class="framework-card">
+        <div class="framework-name">Slack</div>
+        <div class="framework-desc">搜索消息、发送通知</div>
+    </div>
+    <div class="framework-card">
+        <div class="framework-name">GitHub</div>
+        <div class="framework-desc">仓库操作、PR 管理</div>
+    </div>
+    <div class="framework-card">
+        <div class="framework-name">Google Drive</div>
+        <div class="framework-desc">文件管理、文档访问</div>
+    </div>
+    <div class="framework-card">
+        <div class="framework-name">Asana</div>
+        <div class="framework-desc">任务管理、项目跟踪</div>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>优势</strong>：无需编写自定义集成代码或管理 OAuth 流程！
+</blockquote>
+
+<hr/>
+
+<h2>七、验证工作</h2>
+
+<p>Claude Agent SDK 通过评估工作来完成 Agentic 循环。能够检查和改进自己输出的 Agent 本质上更可靠。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">验证的三种方法</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">定义规则</div>
+            <div class="flow-node node-green">视觉反馈</div>
+            <div class="flow-node node-purple">LLM 评判</div>
+        </div>
+    </div>
+</div>
+
+<h3>7.1 定义规则</h3>
+
+<p>最佳反馈形式是提供明确定义的输出规则，然后解释哪些规则失败了以及为什么。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">代码 linting 示例</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-purple">生成 TypeScript</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">Lint 检查</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-blue">多层反馈</div>
+        </div>
+    </div>
+</div>
+
+<h3>7.2 视觉反馈</h3>
+
+<p>当使用 Agent 完成视觉任务（如 UI 生成或测试）时，视觉反馈会很有帮助。</p>
+
+<ul>
+<li>布局 - 元素位置正确吗？间距合适吗？</li>
+<li>样式 - 颜色、字体和格式是否符合预期？</li>
+<li>内容层次 - 信息是否按正确顺序呈现？</li>
+<li>响应式 - 看起来破损或拥挤吗？</li>
+</ul>
+
+<blockquote>
+💡 <strong>工具</strong>：使用 Playwright MCP 服务器自动化视觉反馈循环！
+</blockquote>
+
+<h3>7.3 LLM 作为评判</h3>
+
+<p>可以让另一个语言模型根据模糊规则"评判" Agent 的输出。</p>
+
+<div class="comparison-item neutral">
+    <strong>⚠️ 注意</strong>：这通常不是非常稳健的方法，会有较大的延迟权衡，但对于任何性能提升都值得成本的应用可能有所帮助。
+</div>
+
+<hr/>
+
+<h2>八、测试和改进你的 Agent</h2>
+
+<p>经过几次 Agent 循环后，建议测试你的 Agent，确保它为任务做好了准备。</p>
+
+<h3>自检问题清单</h3>
+
+<div class="step-list">
+    <li>
+        <div class="step-number">?</div>
+        <div>如果 Agent 误解了任务，它可能缺少关键信息。能否改变搜索 API 的结构使其更容易找到需要的信息？</div>
+    </li>
+    <li>
+        <div class="step-number">!</div>
+        <div>如果 Agent 反复失败，能否在工具调用中添加正式规则来识别和修复故障？</div>
+    </li>
+    <li>
+        <div class="step-number">🔧</div>
+        <div>如果 Agent 无法修复错误，能否给它更有用或创造性的工具来以不同方式处理问题？</div>
+    </li>
+    <li>
+        <div class="step-number">📊</div>
+        <div>如果 Agent 的性能随添加功能而变化，基于客户使用构建代表性的测试集进行程序化评估（evals）。</div>
+    </li>
+</div>
+
+<blockquote>
+💡 <strong>最佳方法</strong>：仔细查看输出，尤其是在失败的情况下，换位思考：它是否有正确的工具？
+</blockquote>
+
+<hr/>
+
+<h2>九、开始使用</h2>
+
+<p>Claude Agent SDK 通过给予 Claude 访问计算机的权限，使其能够编写文件、运行命令并迭代其工作，从而更容易构建自主 Agent。</p>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 开始使用</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li><a href="https://docs.claude.com/en/api/agent-sdk/overview" target="_blank">Claude Agent SDK 文档</a></li>
+            <li>查看 <a href="https://docs.claude.com/en/api/agent-sdk/subagents" target="_blank">子 Agents 示例</a></li>
+            <li>学习 <a href="https://docs.claude.com/en/api/agent-sdk/custom-tools" target="_blank">自定义工具</a></li>
+        </ul>
+    </div>
+    <div class="comparison-item neutral">
+        <strong>🔄 迁移指南</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>如果是现有 Claude Code SDK 用户，<a href="https://docs.claude.com/en/docs/claude-code/sdk/migration-guide" target="_blank">迁移指南</a></li>
+        </ul>
+    </div>
+</div>
+
+<hr/>
+
+<h2>十、总结</h2>
+
+<p>Claude Agent SDK 的核心价值：</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-icon">💻</div>
+        <div class="card-title">赋予计算机</div>
+        <div class="card-content">让 Claude 像程序员一样工作</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">🔄</div>
+        <div class="card-title">Agent 循环</div>
+        <div class="card-content">收集上下文 → 采取行动 → 验证 → 重复</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">🔧</div>
+        <div class="card-title">工具 + MCP</div>
+        <div class="card-content">灵活的工具集成</div>
+    </div>
+</div>
+
+<blockquote>
+🎯 <strong>最终建议</strong>：记住 Agent 循环（收集上下文、采取行动、验证工作），构建可靠、易于部署和迭代的 Agent！
+</blockquote>
+
+<hr/>
+
+<h3>参考资源</h3>
+
+<ul>
+<li><a href="https://docs.claude.com/en/api/agent-sdk/overview" target="_blank">Claude Agent SDK 概述</a></li>
+<li><a href="https://docs.claude.com/en/api/agent-sdk/subagents" target="_blank">子 Agents 文档</a></li>
+<li><a href="https://docs.claude.com/en/api/agent-sdk/custom-tools" target="_blank">自定义工具指南</a></li>
+<li><a href="https://modelcontextprotocol.io/" target="_blank">Model Context Protocol (MCP)</a></li>
+<li><a href="https://github.com/modelcontextprotocol/servers" target="_blank">MCP 服务器生态</a></li>
+<li><a href="https://docs.claude.com/en/docs/claude-code/sdk/migration-guide" target="_blank">迁移指南</a></li>
+<li><a href="https://claude.com/product/claude-code" target="_blank">Claude Code 产品页</a></li>
+</ul>
+
+<hr/>
+
+<p><em>文档生成时间：2026-02-07</em></p>
+<p><em>原文链接：https://claude.com/blog/building-agents-with-the-claude-agent-sdk</em></p>
+</article></main>
+<footer><p>📅 最后更新: 2026-02-07</p><p>Built with ❤️</p></footer>
+</body>
+</html>
