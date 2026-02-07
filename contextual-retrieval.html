@@ -102,9 +102,9 @@ style Fail fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
 <div class="mermaid">
 graph TD
     subgraph "性能对比"
-        Base["传统 RAG<br/>5.7% 失败率"] -->|"+ Contextual Embeddings"| C1["3.7%<br/>减少 35%"]
-        C1 -->|"+ Contextual BM25"| C2["2.9%<br/>减少 49%"]
-        C2 -->|"+ Reranking"| C3["1.9%<br/>减少 67%"]
+        Base["传统 RAG<br/>5.7 百分比  失败率"] -->|"+ Contextual Embeddings"| C1["3.7 百分比 <br/>减少 35 百分比 "]
+        C1 -->|"+ Contextual BM25"| C2["2.9 百分比 <br/>减少 49 百分比 "]
+        C2 -->|"+ Reranking"| C3["1.9 百分比 <br/>减少 67 百分比 "]
     end
     
     style Base fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
@@ -281,7 +281,7 @@ graph TD
     
     subgraph "效果"
         Before["重排序前：5.7 失败率"]
-        After["重排序后：1.9% 失败率"]
+        After["重排序后：1.9 百分比  失败率"]
         Before -.-> After
     end
     
