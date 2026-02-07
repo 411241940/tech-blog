@@ -65,12 +65,12 @@ footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0
 graph TD
     subgraph "传统 RAG 的问题"
         Q[用户查询] -->|"检索"| DB[(向量数据库)]
-        DB -->|"可能失败 ❌"| Fail["丢失上下文<br/>检索失败"]
+        DB -->|"可能失败 ❌"| Fail["丢失上下文 检索失败"]
         
         subgraph "示例"
             Ex1["查询：ACME Corp Q2 2023 营收增长？"]
             Ex2["检索到：公司营收增长3"]
-            Ex2 -.-> Problem["不知道是哪家公司<br/>哪个时间段"]
+            Ex2 -.-> Problem["不知道是哪家公司 哪个时间段"]
         end
     end
 end
@@ -102,9 +102,9 @@ style Fail fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
 <div class="mermaid">
 graph TD
     subgraph "性能对比"
-        Base["传统 RAG<br/>5.7 百分比  失败率"] -->|"+ Contextual Embeddings"| C1["3.7 百分比 <br/>减少 35 百分比 "]
-        C1 -->|"+ Contextual BM25"| C2["2.9 百分比 <br/>减少 49 百分比 "]
-        C2 -->|"+ Reranking"| C3["1.9 百分比 <br/>减少 67 百分比 "]
+        Base["传统 RAG 5.7 百分比  失败率"] -->|"+ Contextual Embeddings"| C1["3.7 百分比  减少 35 百分比 "]
+        C1 -->|"+ Contextual BM25"| C2["2.9 百分比  减少 49 百分比 "]
+        C2 -->|"+ Reranking"| C3["1.9 百分比  减少 67 百分比 "]
     end
     
     style Base fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
@@ -128,8 +128,8 @@ graph TD
 <div class="mermaid">
 graph TD
     subgraph "传统分块问题"
-        Doc[原始文档<br/>SEC 文件] -->|"拆分"| Chunk1["第1块<br/>'公司营收增长3'"]
-        Doc -->|"拆分"| Chunk2["第2块<br/>季度数据..."]
+        Doc[原始文档 SEC 文件] -->|"拆分"| Chunk1["第1块 '公司营收增长3'"]
+        Doc -->|"拆分"| Chunk2["第2块 季度数据..."]
         
         Problem1["❌ 不知道哪个公司"]
         Problem2["❌ 不知道哪个季度"]
@@ -235,14 +235,14 @@ only with the succinct context and nothing else.</code></pre>
 <div class="mermaid">
 graph TD
     subgraph "预处理流程"
-        Step1["1. 文档分块<br/>约800 tokens/块"] --> Step2["2. 生成上下文<br/>使用 Claude 3 Haiku"]
-        Step2 --> Step3["3. 添加上下文前缀<br/>50-100 tokens"]
-        Step3 --> Step4["4. 创建双重索引<br/>Embeddings + BM25"]
+        Step1["1. 文档分块 约800 tokens/块"] --> Step2["2. 生成上下文 使用 Claude 3 Haiku"]
+        Step2 --> Step3["3. 添加上下文前缀 50-100 tokens"]
+        Step3 --> Step4["4. 创建双重索引 Embeddings + BM25"]
         Step4 --> Ready[✅ 准备就绪]
     end
     
     subgraph "成本估算"
-        Cost["假设：800 tokens/块<br/>8k tokens/文档<br/>100 tokens 上下文<br/>每百万文档 tokens: $1.02"]
+        Cost["假设：800 tokens/块 8k tokens/文档 100 tokens 上下文 每百万文档 tokens: $1.02"]
         Ready -.-> Cost
     end
 end
@@ -273,7 +273,7 @@ graph TD
     subgraph "重排序流程"
         Query[用户查询] -->|"初步检索"| Stage1["150 个候选块"]
         
-        Stage1 -->|"发送到 reranker"| Reranker((重排序模型<br/>Cohere/Voyage))
+        Stage1 -->|"发送到 reranker"| Reranker((重排序模型 Cohere/Voyage))
         
         Reranker -->|"相关性评分"| Stage2["Top-20 精选块"]
         Stage2 -->|"传递给模型"| Response[生成回答]
@@ -314,9 +314,9 @@ graph TD
 <div class="mermaid">
 graph TD
     subgraph "Chunk 策略"
-        TooSmall["❌ 块太小<br/>丢失上下文"]
-        JustRight["✅ 适中<br/>约800 tokens"]
-        TooLarge["❌ 块太大<br/>检索精度下降"]
+        TooSmall["❌ 块太小 丢失上下文"]
+        JustRight["✅ 适中 约800 tokens"]
+        TooLarge["❌ 块太大 检索精度下降"]
         
         JustRight -.-> Overlap["添加重叠"]
     end
