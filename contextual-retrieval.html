@@ -172,7 +172,7 @@ graph TD
         
         subgraph "双重索引"
             ContextChunks -->|"1. 嵌入"| Embeddings[(上下文嵌入)]
-            ContextChunks -->|"2. BM25| BM25Index[上下文 BM25 索引]
+            ContextChunks -->|"2. BM25"| BM25Index[上下文 BM25 索引]
         end
         
         subgraph "检索"
@@ -260,7 +260,7 @@ style Ready fill:#38ef7d,stroke:#333,stroke-width:3px,color:#333
 
 <hr/>
 
-<h六、结合重排序进一步优化</h2>
+<h2>六、结合重排序进一步优化</h2>
 
 <h3>什么是重排序？</h3>
 
