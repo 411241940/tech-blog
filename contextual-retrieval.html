@@ -93,7 +93,7 @@ style Fail fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
 
 <table>
 <tr><th>方案</th><th>检索失败率</th><th>改进</th></tr>
-<tr><td>传统 RAG</td><td>5.7%</td><td>基准</td></tr>
+<tr><td>传统 RAG</td><td>5.7</td><td>基准</td></tr>
 <tr><td>+ Contextual Embeddings</td><td>3.7%</td><td>✅ 减少 35%</td></tr>
 <tr><td>+ Contextual BM25</td><td>2.9%</td><td>✅ 减少 49%</td></tr>
 <tr><td>+ 重排序（Reranking）</td><td>1.9%</td><td>✅ 减少 67%</td></tr>
@@ -128,7 +128,7 @@ graph TD
 <div class="mermaid">
 graph TD
     subgraph "传统分块问题"
-        Doc[原始文档<br/>SEC 文件] -->|"拆分"| Chunk1["第1块<br/>'公司营收增长3%'"]
+        Doc[原始文档<br/>SEC 文件] -->|"拆分"| Chunk1["第1块<br/>'公司营收增长3'"]
         Doc -->|"拆分"| Chunk2["第2块<br/>季度数据..."]
         
         Problem1["❌ 不知道哪个公司"]
@@ -191,7 +191,7 @@ graph TD
 <h3>分块转换示例</h3>
 
 <p><strong>原始块</strong>：</p>
-<pre><code>"The company's revenue grew by 3% over the previous quarter."</code></pre>
+<pre><code>"The company's revenue grew by 3 over the previous quarter."</code></pre>
 
 <p><strong>添加上下文后</strong>：</p>
 <pre><code>"This chunk is from an SEC filing on ACME corp's performance in Q2 2023; 
@@ -280,7 +280,7 @@ graph TD
     end
     
     subgraph "效果"
-        Before["重排序前：5.7% 失败率"]
+        Before["重排序前：5.7 失败率"]
         After["重排序后：1.9% 失败率"]
         Before -.-> After
     end
@@ -427,7 +427,7 @@ graph TD
         Best --> R["重排序"]
         Best --> K["Top-20 检索"]
         
-        E --> Result["✅ 67% 检索失败率降低"]
+        E --> Result["✅ 67 检索失败率降低"]
         B --> Result
         C --> Result
         R --> Result
