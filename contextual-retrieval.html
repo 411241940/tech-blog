@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>上下文检索增强生成指南 | 技术博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#11998e,#38ef7d);color:white;padding:60px 20px;text-align:center}
+header h1{font-size:2.5em;margin-bottom:10px}
+header p{opacity:0.9}
+nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
+nav a{margin-right:25px;text-decoration:none;color:#11998e;font-weight:600}
+nav a:hover{color:#38ef7d}
+article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+article h1{color:#11998e;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #11998e}
+article h2{color:#38ef7d;margin:35px 0 15px}
+article h3{color:#444;margin:25px 0 10px}
+article p{margin:15px 0}
+article a{color:#11998e;text-decoration:none}
+article a:hover{text-decoration:underline}
+article code{background:#f4f4f4;padding:3px 8px;border-radius:4px;font-family:monospace}
+article pre{background:#2d3748;color:#f8f8f2;padding:20px;border-radius:8px;overflow-x:auto;margin:20px 0}
+article pre code{background:none;color:inherit;padding:0}
+article ul,article ol{margin:15px 0 15px 30px}
+article li{margin:8px 0}
+article blockquote{border-left:4px solid #11998e;padding:15px 20px;margin:20px 0;background:#f7f7fa;border-radius:0 8px 8px 0}
+article table{width:100%;border-collapse:collapse;margin:20px 0}
+article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
+article th{background:linear-gradient(135deg,#11998e,#38ef7d);color:white}
+article tr:nth-child(even){background:#f7f7fa}
+article tr:hover{background:#edf2f7}
+article .mermaid{background:white;padding:20px;margin:20px 0;text-align:center}
+footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
+@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
+<nav class="container"><a href="index.html">🏠 首页</a><a href="building-effective-agents.html">🤖 Effective Agents</a><a href="effective-context-engineering.html">📦 Context Engineering</a><a href="contextual-retrieval.html">🔍 Contextual Retrieval</a></nav>
+<main class="container"><article><h1>上下文检索增强生成指南</h1>
+
+<blockquote>作者：Anthropic Applied AI Team (Daniel Ford, Orowa Sikder, Gautam Mittal, Kenneth Lien)</blockquote>
+<blockquote>阅读时间：2026-02-07</blockquote>
+<blockquote>翻译：HinnBot</blockquote>
+
+<hr/>
+
+<h2>一、引言：传统 RAG 的痛点</h2>
+
+<p>要让 AI 模型在特定场景下发挥作用，通常需要让它访问背景知识。比如：</p>
+
+<ul>
+<li>客服聊天机器人需要了解具体业务知识</li>
+<li>法律分析机器人需要了解大量历史案例</li>
+</ul>
+
+<p>开发者通常使用 <strong>RAG（检索增强生成）</strong> 来增强 AI 模型的知识。RAG 的工作原理是：从知识库中检索相关信息，并将其附加到用户提示中，从而显著提升模型的回答质量。</p>
+
+<p><strong>但是，传统 RAG 有一个致命问题：</strong> 在编码信息时会丢失上下文，导致系统无法从知识库中检索到相关信息。</p>
+
+<div class="mermaid">
+graph TD
+    subgraph "传统 RAG 的问题"
+        Q[用户查询] -->|"检索"| DB[(向量数据库)]
+        DB -->|"可能失败 ❌"| Fail["丢失上下文<br/>检索失败"]
+        
+        subgraph "示例"
+            Ex1["查询：ACME Corp Q2 2023 营收增长？"]
+            Ex2["检索到：'公司营收增长3%...'"]
+            Ex2 -.->|"缺少上下文"| Problem["不知道是哪家公司<br/>哪个时间段"]
+        end
+    end
+end
+
+style Fail fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<hr/>
+
+<h2>二、Contextual Retrieval 简介</h2>
+
+<p><strong>Contextual Retrieval</strong>（上下文检索）通过两个子技术来解决这个问题：</p>
+
+<ul>
+<li><strong>Contextual Embeddings</strong>（上下文嵌入）</li>
+<li><strong>Contextual BM25</strong>（上下文 BM25）</li>
+</ul>
+
+<h3>性能提升</h3>
+
+<table>
+<tr><th>方案</th><th>检索失败率</th><th>改进</th></tr>
+<tr><td>传统 RAG</td><td>5.7%</td><td>基准</td></tr>
+<tr><td>+ Contextual Embeddings</td><td>3.7%</td><td>✅ 减少 35%</td></tr>
+<tr><td>+ Contextual BM25</td><td>2.9%</td><td>✅ 减少 49%</td></tr>
+<tr><td>+ 重排序（Reranking）</td><td>1.9%</td><td>✅ 减少 67%</td></tr>
+</table>
+
+<div class="mermaid">
+graph TD
+    subgraph "性能对比"
+        Base["传统 RAG<br/>5.7% 失败率"] -->|"+ Contextual Embeddings"| C1["3.7%<br/>减少 35%"]
+        C1 -->|"+ Contextual BM25"| C2["2.9%<br/>减少 49%"]
+        C2 -->|"+ Reranking"| C3["1.9%<br/>减少 67%"]
+    end
+    
+    style Base fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
+    style C1 fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style C2 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style C3 fill:#11998e,stroke:#333,stroke-width:3px,color:#fff
+</div>
+
+<blockquote>
+💡 <strong>核心洞察</strong>：仅仅为每个文本块添加解释性上下文，就能显著提升检索准确性！
+</blockquote>
+
+<hr/>
+
+<h2>三、传统 RAG 的困境</h2>
+
+<h3>分块时的上下文丢失</h3>
+
+<p>在传统 RAG 中，文档通常被拆分成较小的文本块以提高检索效率。虽然这种方法在很多场景下有效，但当单个块缺乏足够上下文时，就会出现问题。</p>
+
+<div class="mermaid">
+graph TD
+    subgraph "传统分块问题"
+        Doc[原始文档<br/>SEC 文件] -->|"拆分"| Chunk1["第1块<br/>'公司营收增长3%'"]
+        Doc -->|"拆分"| Chunk2["第2块<br/>季度数据..."]
+        
+        Problem1["❌ 不知道哪个公司"]
+        Problem2["❌ 不知道哪个季度"]
+        Problem3["❌ 缺少关键背景"]
+        
+        Chunk1 -.-> Problem1
+        Chunk2 -.-> Problem2
+    end
+    
+    style Doc fill:#11998e,stroke:#333,stroke-width:2px,color:#fff
+    style Chunk1 fill:#dc3545,stroke:#333,stroke-width:1px,color:#fff
+    style Chunk2 fill:#dc3545,stroke:#333,stroke-width:1px,color:#fff
+</div>
+
+<p><strong>示例场景</strong>：</p>
+<p>假设知识库中包含财务信息（SEC 文件），用户问："ACME Corp 在 2023 年 Q2 的营收增长是多少？"</p>
+
+<p>检索到的块可能是："公司营收比上一季度增长 3%"</p>
+
+<p><strong>问题</strong>：这个块没有说明是哪家公司，也没有说明是哪个季度，导致无法提供准确的答案。</p>
+
+<hr/>
+
+<h2>四、Contextual Retrieval 的解决方案</h2>
+
+<h3>核心思想</h3>
+
+<p>Contextual Retrieval 通过在嵌入（"Contextual Embeddings"）和创建 BM25 索引（"Contextual BM25"）<strong>之前</strong>，为每个块添加特定的解释性上下文来解决这个问题。</p>
+
+<div class="mermaid">
+graph TD
+    subgraph "Contextual Retrieval 流程"
+        Doc[原始文档] -->|"分块"| Chunks[多个文本块]
+        
+        subgraph "添加上下文"
+            ContextPrompt["使用 Claude 生成上下文"]
+            Chunks -->|"+ 文档信息"| ContextPrompt
+            ContextPrompt -->|"添加解释性上下文"| ContextChunks["带上下文的块"]
+        end
+        
+        subgraph "双重索引"
+            ContextChunks -->|"1. 嵌入"| Embeddings[(上下文嵌入)]
+            ContextChunks -->|"2. BM25| BM25Index[上下文 BM25 索引]
+        end
+        
+        subgraph "检索"
+            Query[用户查询] -->|"并行检索"| Embeddings
+            Query --> BM25Index
+            Embeddings -->|"融合结果"| Results[Top-K 相关块]
+            BM25Index --> Results
+        end
+        
+        style ContextChunks fill:#11998e,stroke:#333,stroke-width:2px,color:#fff
+        style Embeddings fill:#28a745,stroke:#333,stroke-width:1px,color:#fff
+        style BM25Index fill:#28a745,stroke:#333,stroke-width:1px,color:#fff
+    end
+</div>
+
+<h3>分块转换示例</h3>
+
+<p><strong>原始块</strong>：</p>
+<pre><code>"The company's revenue grew by 3% over the previous quarter."</code></pre>
+
+<p><strong>添加上下文后</strong>：</p>
+<pre><code>"This chunk is from an SEC filing on ACME corp's performance in Q2 2023; 
+the previous quarter's revenue was $314 million. The company's revenue grew 
+by 3% over the previous quarter."</code></pre>
+
+<p><strong>差异</strong>：</p>
+<ul>
+<li>✅ 明确了公司名称（ACME Corp）</li>
+<li>✅ 明确了时间段（Q2 2023）</li>
+<li>✅ 添加了关键数据（$314 million）</li>
+</ul>
+
+<hr/>
+
+<h2>五、实现方法</h2>
+
+<h3>使用 Claude 生成上下文</h3>
+
+<p>手动标注数千甚至数百万个块是不现实的。借助 Claude，我们可以自动生成简洁的、块特定的上下文。</p>
+
+<p><strong>上下文生成提示词</strong>：</p>
+
+<pre><code class="language-text">&lt;document&gt;
+{{WHOLE_DOCUMENT}}
+&lt;/document&gt;
+
+Here is the chunk we want to situate within the whole document:
+&lt;chunk&gt;
+{{CHUNK_CONTENT}}
+&lt;/chunk&gt;
+
+Please give a short succinct context to situate this chunk within the overall 
+document for the purposes of improving search retrieval of the chunk. Answer 
+only with the succinct context and nothing else.</code></pre>
+
+<p><strong>生成结果</strong>：通常 50-100 tokens，添加到每个块的开头。</p>
+
+<h3>预处理的完整流程</h3>
+
+<div class="mermaid">
+graph TD
+    subgraph "预处理流程"
+        Step1["1. 文档分块<br/>~800 tokens/块"] --> Step2["2. 生成上下文<br/>使用 Claude 3 Haiku"]
+        Step2 --> Step3["3. 添加上下文前缀<br/>50-100 tokens"]
+        Step3 --> Step4["4. 创建双重索引<br/>Embeddings + BM25"]
+        Step4 --> Ready[✅ 准备就绪]
+    end
+    
+    subgraph "成本估算"
+        Cost["假设：800 tokens/块<br/>8k tokens/文档<br/>100 tokens 上下文<br/>每百万文档 tokens: $1.02"]
+        Ready -.-> Cost
+    end
+end
+
+style Step1 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+style Step2 fill:#11998e,stroke:#333,stroke-width:2px,color:#fff
+style Step3 fill:#11998e,stroke:#333,stroke-width:2px,color:#fff
+style Step4 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+style Ready fill:#38ef7d,stroke:#333,stroke-width:3px,color:#333
+</div>
+
+<blockquote>
+💡 <strong>成本优势</strong>：借助 Prompt Caching，生成上下文块的成本仅为 $1.02/百万文档 tokens，比想象中便宜得多！
+</blockquote>
+
+<hr/>
+
+<h六、结合重排序进一步优化</h2>
+
+<h3>什么是重排序？</h3>
+
+<p>在传统 RAG 中，AI 系统会搜索知识库以找到可能相关的信息块。对于大型知识库，初始检索可能返回数百个相关性各异的块。</p>
+
+<p><strong>重排序（Reranking）</strong> 是一种过滤技术，确保只有最相关的块传递给模型。</p>
+
+<div class="mermaid">
+graph TD
+    subgraph "重排序流程"
+        Query[用户查询] -->|"初步检索"| Stage1["150 个候选块"]
+        
+        Stage1 -->|"发送到 reranker"| Reranker((重排序模型<br/>Cohere/Voyage))
+        
+        Reranker -->|"相关性评分"| Stage2["Top-20 精选块"]
+        Stage2 -->|"传递给模型"| Response[生成回答]
+    end
+    
+    subgraph "效果"
+        Before["重排序前：5.7% 失败率"]
+        After["重排序后：1.9% 失败率"]
+        Before -->|"67% 改进"| After
+    end
+    
+    style Stage1 fill:#ffc107,stroke:#333,stroke-width:1px,color:#333
+    style Stage2 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Reranker fill:#11998e,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<h3>性能叠加效果</h3>
+
+<table>
+<tr><th>配置</th><th>失败率</th><th>相对改进</th></tr>
+<tr><td>基础 Embeddings</td><td>5.7%</td><td>—</td></tr>
+<tr><td>+ Contextual Retrieval</td><td>2.9%</td><td>+49%</td></tr>
+<tr><td>+ Reranking</td><td>1.9%</td><td>+67%</td></tr>
+</table>
+
+<blockquote>
+🎯 <strong>最佳实践</strong>：Contextual Embeddings + Contextual BM25 + Reranking = 最高检索准确性
+</blockquote>
+
+<hr/>
+
+<h2>七、实战建议</h2>
+
+<h3>1. Chunk 边界选择</h3>
+
+<p>考虑如何将文档拆分成块。块大小、块边界和块重叠都会影响检索性能。</p>
+
+<div class="mermaid">
+graph TD
+    subgraph "Chunk 策略"
+        TooSmall["❌ 块太小<br/>丢失上下文"]
+        JustRight["✅ 适中<br/>~800 tokens"]
+        TooLarge["❌ 块太大<br/>检索精度下降"]
+        
+        JustRight -->|"重叠 10-20%"| Overlap["添加重叠"]
+    end
+end
+
+<h3>2. Embedding 模型选择</h3>
+
+<table>
+<tr><th>模型</th><th>效果</th><th>备注</th></tr>
+<tr><td>Gemini Text 004</td><td>⭐⭐⭐⭐⭐</td><td>最佳表现</td></tr>
+<tr><td>Voyage</td><td>⭐⭐⭐⭐⭐</td><td>非常有效</td></tr>
+<tr><td>其他模型</td><td>⭐⭐⭐</td><td>也有提升</td></tr>
+</table>
+
+<blockquote>
+💡 <strong>发现</strong>：Contextual Retrieval 在所有测试的嵌入模型上都有提升，但 Gemini 和 Voyage 受益最大。
+</blockquote>
+
+<h3>3. 自定义上下文提示词</h3>
+
+<p>虽然通用提示词效果不错，但对于特定领域，使用定制提示词可能效果更好：</p>
+
+<ul>
+<li>包含仅在其他文档中定义的专业术语词汇表</li>
+<li>针对特定行业的背景信息</li>
+<li>领域特定的检索线索</li>
+</ul>
+
+<h3>4. Chunk 数量选择</h3>
+
+<table>
+<tr><th>Top-K 数量</th><th>效果</th><th>建议</th></tr>
+<tr><td>5</td><td>可能遗漏</td><td>❌ 不推荐</td></tr>
+<tr><td>10</td><td>一般</td><td>⚠️ 视情况</td></tr>
+<tr><td>20</td><td>最佳</td><td>✅ 推荐</td></tr>
+</table>
+
+<blockquote>
+💡 <strong>提示</strong>：传递更多块会增加包含相关信息的机会，但信息过多会让模型分心，需要权衡。
+</blockquote>
+
+<h3>5. 始终运行评估</h3>
+
+<p>响应生成时，可以将上下文化的块传递给模型，并区分哪些是上下文、哪些是原始块内容。</p>
+
+<hr/>
+
+<h2>八、与上下文工程的关系</h2>
+
+<p>Contextual Retrieval 是 <strong>上下文工程</strong>（见 <a href="effective-context-engineering.html">上下文工程指南</a>）的一个重要组成部分。</p>
+
+<div class="mermaid">
+graph TD
+    subgraph "上下文工程体系"
+        CE["📦 上下文工程"] -->|"包含"| CR["🔍 Contextual Retrieval"]
+        CE -->|"包含"| Tools["🔧 工具设计"]
+        CE -->|"包含"| Compaction["📝 压缩策略"]
+        CE -->|"包含"| Notes["📒 笔记系统"]
+        CE -->|"包含"| SubAgents["🤖 子智能体"]
+    end
+    
+    subgraph "Contextual Retrieval 位置"
+        CR -->|"属于"| Retrieval["📊 检索层面"]
+    end
+    
+    style CE fill:#6f42c1,stroke:#333,stroke-width:3px,color:#fff
+    style CR fill:#11998e,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<h3>核心原则一致性</h3>
+
+<ul>
+<li><strong>最小高信号 token 集</strong>：Contextual Retrieval 通过添加上下文信息，提高每个检索块的信息密度</li>
+<li><strong>避免上下文腐烂</strong>：精确的上下文信息比大量模糊信息更有效</li>
+<li><strong>分层信息架构</strong>：上下文信息 → 核心内容 → 辅助信息</li>
+</ul>
+
+<hr/>
+
+<h2>九、替代方案对比</h2>
+
+<h3>其他尝试过的方法（效果不佳）</h3>
+
+<table>
+<tr><th>方法</th><th>效果</th><th>结论</th></tr>
+<tr><td>通用文档摘要</td><td>❌ 提升有限</td><td>不够具体</td></tr>
+<tr><td>假设文档嵌入（HyDE）</td><td>⚠️ 效果一般</td><td>不如真实上下文</td></tr>
+<tr><td>基于摘要的索引</td><td>❌ 性能较低</td><td>丢失细节</td></tr>
+<tr><td><strong>Contextual Retrieval</strong></td><td>✅ <strong>最佳</strong></td><td>显著提升</td></tr>
+</table>
+
+<blockquote>
+💡 <strong>结论</strong>：为每个块添加真实的解释性上下文，比假设或摘要方法更有效。
+</blockquote>
+
+<hr/>
+
+<h2>十、总结</h2>
+
+<h3>关键发现</h3>
+
+<div class="mermaid">
+graph TD
+    subgraph "最佳实践组合"
+        Best["🏆 最优配置"] --> E["Voyage/Gemini 嵌入"]
+        Best --> B["Contextual BM25"]
+        Best --> C["上下文嵌入"]
+        Best --> R["重排序"]
+        Best --> K["Top-20 检索"]
+        
+        E --> Result["✅ 67% 检索失败率降低"]
+        B --> Result
+        C --> Result
+        R --> Result
+        K --> Result
+    end
+    
+    style Best fill:#11998e,stroke:#333,stroke-width:3px,color:#fff
+    style Result fill:#38ef7d,stroke:#333,stroke-width:2px,color:#333
+</div>
+
+<h3>实践建议</h3>
+
+<ol>
+<li><strong>从简单开始</strong>：如果知识库小于 200,000 tokens，直接把整个知识库放进 prompt</li>
+<li><strong>使用 Prompt Caching</strong>：借助 Claude 的 prompt caching，大幅降低 Contextual Retrieval 的成本</li>
+<li><strong>组合使用</strong>：Contextual Embeddings + Contextual BM25 + Reranking = 最佳效果</li>
+<li><strong>持续评估</strong>：根据实际效果调整 chunk 大小、top-k 数量等参数</li>
+</ol>
+
+<h3>相关资源</h3>
+
+<ul>
+<li><a href="https://platform.claude.com/cookbook/capabilities-contextual-embeddings-guide" target="_blank">Anthropic Contextual Embeddings Cookbook</a></li>
+<li><a href="https://platform.claude.com/cookbook/misc-prompt-caching" target="_blank">Prompt Caching Cookbook</a></li>
+<li><a href="https://cohere.com/rerank" target="_blank">Cohere Reranker</a></li>
+<li><a href="https://docs.voyageai.com/docs/reranker" target="_blank">Voyage Reranker</a></li>
+<li><a href="https://ai.google.dev/gemini-api/docs/embeddings" target="_blank">Gemini Embeddings</a></li>
+<li><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank">上下文工程指南</a></li>
+</ul>
+
+<hr/>
+
+<p><em>文档生成时间：2026-02-07</em></p>
+<p><em>原文链接：https://www.anthropic.com/engineering/contextual-retrieval</em></p>
+</article></main>
+<footer><p>📅 最后更新: 2026-02-07</p><p>Built with ❤️</p></footer>
+</body>
+</html>

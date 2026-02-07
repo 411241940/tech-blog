@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building Effective AI Agents | 技术博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center}
+header h1{font-size:2.5em;margin-bottom:10px}
+header p{opacity:0.9}
+nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
+nav a{margin-right:25px;text-decoration:none;color:#667eea;font-weight:600}
+nav a:hover{color:#764ba2}
+article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+article h1{color:#667eea;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #667eea}
+article h2{color:#764ba2;margin:35px 0 15px}
+article h3{color:#444;margin:25px 0 10px}
+article p{margin:15px 0}
+article a{color:#667eea;text-decoration:none}
+article a:hover{text-decoration:underline}
+article code{background:#f4f4f4;padding:3px 8px;border-radius:4px;font-family:monospace}
+article pre{background:#2d3748;color:#f8f8f2;padding:20px;border-radius:8px;overflow-x:auto;margin:20px 0}
+article pre code{background:none;color:inherit;padding:0}
+article ul,article ol{margin:15px 0 15px 30px}
+article li{margin:8px 0}
+article blockquote{border-left:4px solid #667eea;padding:15px 20px;margin:20px 0;background:#f7f7fa;border-radius:0 8px 8px 0}
+article table{width:100%;border-collapse:collapse;margin:20px 0}
+article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
+article th{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+article tr:nth-child(even){background:#f7f7fa}
+article tr:hover{background:#edf2f7}
+article .mermaid{background:white;padding:20px;margin:20px 0;text-align:center}
+footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
+@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head>
+<body>
+<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
+<nav class="container"><a href="index.html">🏠 首页</a><a href="building-effective-agents.html">🤖 Effective Agents</a><a href="effective-context-engineering.html">📦 Context Engineering</a></nav>
+<main class="container"><article><h1>Building Effective AI Agents</h1>
+
+<blockquote>作者：Erik Schluntz & Barry Zhang (Anthropic)</blockquote>
+<blockquote>阅读时间：2026-02-07</blockquote>
+
+<hr/>
+
+<h2>一、核心定义</h2>
+
+<p><strong>Agentic System 分类对比图</strong>：</p>
+
+<div class="mermaid">
+graph TD
+    subgraph "Agentic Systems"
+        A[Agentic系统] --> B[Workflows工作流]
+        A --> C[Agents代理]
+    end
+    
+    subgraph "Workflows特点"
+        B --> B1[预定义代码路径]
+        B --> B2[可预测性]
+        B --> B3[中等成本]
+    end
+    
+    subgraph "Agents特点"
+        C --> C1[动态自主决策]
+        C --> C2[灵活性]
+        C --> C3[高成本]
+    end
+    
+    style A fill:#6f42c1,stroke:#333,stroke-width:3px,color:#fff
+    style B fill:#007bff,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<table>
+<tr><th>类型</th><th>描述</th></tr>
+<tr><td>**Workflows（工作流）**</td><td>通过预定义代码路径编排LLM和工具</td></tr>
+<tr><td>**Agents（代理）**</td><td>LLM动态指导自己的流程和工具使用，保持对任务完成方式的控制</td></tr>
+</table>
+
+<hr/>
+
+<h2>二、何时（不）使用Agent</h2>
+
+<p><strong>方案选择决策树</strong>：</p>
+
+<div class="mermaid">
+graph TD
+    Start([开始]) --> Q1{任务复杂度?}
+    Q1 -->|简单| Q2{需要灵活性?}
+    Q2 -->|否| Simple[单次LLM调用]
+    Q2 -->|是| Workflows[Workflows工作流]
+    Q1 -->|复杂| Q3{可预测性重要?}
+    Q3 -->|是| Workflows
+    Q3 -->|否| Agents[Agents代理]
+    
+    Simple --> End1([低成本<br/>低延迟])
+    Workflows --> End2([中等成本<br/>可预测])
+    Agents --> End3([高成本<br/>高灵活性])
+    
+    style Start fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Q1 fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Q2 fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Q3 fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Simple fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Workflows fill:#6f42c1,stroke:#333,stroke-width:2px,color:#fff
+    style Agents fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<p><strong>核心原则</strong>：先用最简单的方案，只在需要时才增加复杂性。</p>
+
+<h3>方案对比</h3>
+
+<table>
+<tr><th>方案</th><th>适用场景</th><th>代价</th><th>特点</th></tr>
+<tr><td>**单次LLM调用**</td><td>简单检索+上下文示例</td><td>延迟低、成本低</td><td>快速简单</td></tr>
+<tr><td>**Workflows**</td><td>任务定义清晰、需要可预测性</td><td>中等</td><td>可控、可预测</td></tr>
+<tr><td>**Agents**</td><td>需要灵活性、模型驱动决策</td><td>高延迟、高成本</td><td>自主、灵活</td></tr>
+</table>
+
+<p><strong>决策建议</strong>：当需要更复杂性时，Workflows提供可预测性，Agents更适合需要模型驱动决策的开放性场景。</p>
+
+<hr/>
+
+<h2>三、构建块：Augmented LLM</h2>
+
+<p>Agent的基础是<strong>增强型LLM</strong>，具备三种核心能力：</p>
+
+<ul>
+<li><strong>检索</strong>（Retrieval）- 获取外部信息</li>
+<li><strong>工具</strong>（Tools）- 执行外部操作</li>
+<li><strong>记忆</strong>（Memory）- 保留上下文信息</li>
+
+</ul>
+<h3>关键实现建议</h3>
+
+<ol>
+<li><strong>定制化</strong>：根据具体用例调整这些能力</li>
+</ol>
+<ol>
+<li><strong>接口设计</strong>：提供简单、文档完善的接口</li>
+</ol>
+<ol>
+<li><strong>协议推荐</strong>：使用 <a href="https://www.anthropic.com/news/model-context-protocol" target="_blank">Model Context Protocol (MCP)</a> 集成第三方工具</li>
+
+</ol>
+<h3>Augmented LLM 架构图</h3>
+
+<div class="mermaid">
+graph LR
+    A["🤖 增强型 LLM"] --> B[检索 Retrieval]
+    A --> C[工具 Tools]
+    A --> D[记忆 Memory]
+    
+    B --> B1[外部信息获取]
+    C --> C1[外部操作执行]
+    D --> D1[上下文保持]
+    
+    style A fill:#6f42c1,stroke:#333,stroke-width:2px,color:#fff
+    style B fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style C fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style D fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+</div>
+
+<hr/>
+
+<h2>四、五大Workflow模式</h2>
+
+<h3>1. Prompt Chaining（提示链）</h3>
+
+<div class="mermaid">
+graph LR
+    Task[任务] --> Step1[步骤1 LLM]
+    Step1 --> Gate{校验?}
+    Gate -->|通过| Step2[步骤2 LLM]
+    Step2 --> Step3[步骤3 LLM]
+    Step3 --> Result[结果]
+    Gate -->|失败| Human[人工干预]
+    
+    style Task fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Step1 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Step2 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Step3 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Result fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Gate fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Human fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<p><strong>描述</strong>：将任务分解为序列步骤，每步LLM处理上一步输出，可在中间步骤添加程序化校验。</p>
+
+<p><strong>适用场景</strong>：</p>
+<ul>
+<li>任务可清晰拆分为固定子任务</li>
+<li>通过简化每步任务提高准确率</li>
+
+</ul>
+<p><strong>示例</strong>：</p>
+<ul>
+<li>生成营销文案 → 翻译成不同语言</li>
+<li>写大纲 → 检查大纲 → 基于大纲写正文</li>
+
+</ul>
+<hr/>
+
+<h3>2. Routing（路由）</h3>
+
+<div class="mermaid">
+graph TD
+    Input[输入] --> Classifier{分类器}
+    Classifier -->|类型A| ProcessA[专用处理流程A]
+    Classifier -->|类型B| ProcessB[专用处理流程B]
+    Classifier -->|类型C| ProcessC[专用处理流程C]
+    ProcessA --> Output[输出]
+    ProcessB --> Output
+    ProcessC --> Output
+    
+    style Input fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Classifier fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style ProcessA fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style ProcessB fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style ProcessC fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Output fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<p><strong>描述</strong>：分类输入并导向专用后续任务，实现关注点分离和更专业的提示优化。</p>
+
+<p><strong>适用场景</strong>：</p>
+<ul>
+<li>复杂任务有明确分类</li>
+<li>分类可由LLM或传统分类模型准确处理</li>
+
+</ul>
+<p><strong>示例</strong>：</p>
+<ul>
+<li>客服问题分类（退款/技术支持/一般咨询）</li>
+<li>简单问题 → 小模型（如Claude Haiku）</li>
+<li>复杂问题 → 大模型（如Claude Sonnet）</li>
+
+</ul>
+<hr/>
+
+<h3>3. Parallelization（并行化）</h3>
+
+<h4>a) Sectioning（分段式）</h4>
+<div class="mermaid">
+graph LR
+    Task[任务] --> Split[分解]
+    Split --> SubA[子任务A]
+    Split --> SubB[子任务B]
+    Split --> SubC[子任务C]
+    SubA --> Aggregate[聚合结果]
+    SubB --> Aggregate
+    SubC --> Aggregate
+    
+    style Task fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Split fill:#6c757d,stroke:#333,stroke-width:1px,color:#fff
+    style SubA fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style SubB fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style SubC fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Aggregate fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<h4>b) Voting（投票式）</h4>
+<div class="mermaid">
+graph LR
+    Task[任务] --> Exec1[执行1]
+    Task --> Exec2[执行2]
+    Task --> Exec3[执行N]
+    Exec1 --> Vote[投票聚合]
+    Exec2 --> Vote
+    Exec3 --> Vote
+    Vote --> Result[结果]
+    
+    style Task fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Exec1 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Exec2 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Exec3 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Vote fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Result fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<p><strong>适用场景</strong>：</p>
+<ul>
+<li>子任务可并行执行以提升速度</li>
+<li>需要多角度验证或多次尝试以获得更高置信度</li>
+
+</ul>
+<p><strong>示例</strong>：</p>
+<ul>
+<li><strong>分段式</strong>：一个模型处理用户查询，另一个筛选不当内容</li>
+<li><strong>投票式</strong>：多个提示审查代码漏洞，多角度内容审核</li>
+
+</ul>
+<hr/>
+
+<h3>4. Orchestrator-Workers（编排-工作器）</h3>
+
+<div class="mermaid">
+graph TD
+    Input[输入] --> Orchestrator[中央LLM<br/>编排器]
+    Orchestrator -->|动态分解| Task1[任务规划]
+    Orchestrator -->|动态分解| Task2[任务规划]
+    Orchestrator -->|动态分解| TaskN[任务规划]
+    
+    Task1 --> Worker1[工作器1]
+    Task2 --> Worker2[工作器2]
+    TaskN --> WorkerN[工作器N]
+    
+    Worker1 --> Result1[结果]
+    Worker2 --> Result2[结果]
+    WorkerN --> ResultN[结果]
+    
+    Result1 --> Synthesize[汇总]
+    Result2 --> Synthesize
+    ResultN --> Synthesize
+    Synthesize --> Output[最终结果]
+    
+    style Input fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Orchestrator fill:#6f42c1,stroke:#333,stroke-width:3px,color:#fff
+    style Worker1 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Worker2 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style WorkerN fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Synthesize fill:#6f42c1,stroke:#333,stroke-width:2px,color:#fff
+    style Output fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<p><strong>描述</strong>：中央LLM动态分解任务，委托给工作LLM，最后汇总结果。</p>
+
+<p><strong>与并行化的区别</strong>：子任务是<strong>动态确定</strong>的，而非预定义。</p>
+
+<p><strong>适用场景</strong>：</p>
+<ul>
+<li>复杂任务，无法预判子任务数量</li>
+<li>子任务取决于具体输入</li>
+
+</ul>
+<p><strong>示例</strong>：</p>
+<ul>
+<li>编码产品每次需要修改多个文件</li>
+<li>综合搜索任务（从多个来源收集和分析信息）</li>
+
+</ul>
+<hr/>
+
+<h3>5. Evaluator-Optimizer（评估-优化器）</h3>
+
+<div class="mermaid">
+graph LR
+    Generator[生成器] --> Output[结果]
+    Output --> Evaluator{评估器<br/>通过?}
+    Evaluator -->|通过| Final[最终输出]
+    Evaluator -->|反馈| Generator
+    
+    style Generator fill:#007bff,stroke:#333,stroke-width:2px,color:#fff
+    style Output fill:#6c757d,stroke:#333,stroke-width:1px,color:#fff
+    style Evaluator fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Final fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<p><strong>描述</strong>：一个LLM生成响应，另一个提供评估和反馈，形成循环。</p>
+
+<p><strong>适用场景</strong>：</p>
+<ul>
+<li>有明确的评估标准</li>
+<li>迭代优化能带来可衡量的改进</li>
+
+</ul>
+<p><strong>适用条件</strong>：</p>
+<ol>
+<li>当人类能够清晰表达反馈时，LLM响应可以明显改进</li>
+</ol>
+<ol>
+<li>LLM能够提供有价值的反馈</li>
+
+</ol>
+<p><strong>示例</strong>：</p>
+<ul>
+<li>文学翻译（需要捕捉细微差异）</li>
+<li>复杂搜索任务（多轮搜索和分析）</li>
+
+</ul>
+<hr/>
+
+<h2>五、Agents的实现要点</h2>
+
+<h3>何时使用Agents</h3>
+
+<p><strong>触发条件</strong>：</p>
+<ul>
+<li>开放性问题，难以预测所需步骤数</li>
+<li>无法硬编码固定路径</li>
+<li>LLM需要多轮操作</li>
+
+</ul>
+<p><strong>核心原则</strong>：</p>
+
+<ol>
+<li><strong>保持设计简单</strong></li>
+</ol>
+<ol>
+<li><strong>优先透明性</strong> - 明确展示Agent的规划步骤</li>
+</ol>
+<ol>
+<li><strong>精心设计ACI</strong>（Agent-Computer Interface）</li>
+</ol>
+<ul>
+<li>完善的工具文档</li>
+<li>充分的工具测试</li>
+
+</ul>
+<h3>Agent运行机制</h3>
+
+<div class="mermaid">
+graph TD
+    Start([开始]) --> Understand[理解任务]
+    Understand --> Plan[规划步骤]
+    Plan --> Execute[执行工具]
+    
+    Execute --> Feedback{环境反馈}
+    Feedback -->|工具结果/代码| Assess[评估进度]
+    
+    Assess --> Checkpoint{检查点<br/>暂停?}
+    Checkpoint -->|是| Human{人类反馈}
+    Human -->|继续| Assess
+    Human -->|放弃| Stop([停止])
+    
+    Checkpoint -->|否| Blocked{遇到阻碍?}
+    Blocked -->|是| Human
+    Blocked -->|否| Complete{完成?}
+    Complete -->|否| Execute
+    Complete -->|是| Stop
+    
+    Stop -->|达到停止条件| End([结束])
+    
+    style Start fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Understand fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Plan fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Execute fill:#6f42c1,stroke:#333,stroke-width:2px,color:#fff
+    style Feedback fill:#6c757d,stroke:#333,stroke-width:1px,color:#fff
+    style Assess fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Checkpoint fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Human fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
+    style Blocked fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Complete fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Stop fill:#6c757d,stroke:#333,stroke-width:2px,color:#fff
+    style End fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<p><strong>关键机制</strong>：</p>
+<ul>
+<li>环境反馈循环（工具调用结果、代码执行结果）</li>
+<li>检查点机制（暂停获取人工反馈）</li>
+<li>停止条件（如最大迭代次数）</li>
+
+</ul>
+<p><strong>成本与风险</strong>：</p>
+<ul>
+<li>更高成本</li>
+<li>累积错误的可能性</li>
+<li>建议在沙盒环境中广泛测试，配备适当的护栏</li>
+
+</ul>
+<hr/>
+
+<h2>六、工具设计最佳实践</h2>
+
+<h3>核心法则</h3>
+
+<blockquote>投入HCI（人机交互）多少精力，就投入ACI（Agent-计算机接口）多少精力。</blockquote>
+
+<h3>具体建议</h3>
+
+<h4>1. 格式选择原则</h4>
+
+<div class="mermaid">
+graph TD
+    Start[工具格式选择] --> Q1{格式是否自然?}
+    Q1 -->|否| Revise[改进格式]
+    Q1 -->|是| Q2{Token充足?}
+    Q2 -->|否| Revise
+    Q2 -->|是| Q3{有计算开销?}
+    Q3 -->|是| Optimize[优化简化]
+    Q3 -->|否| Good[✓ 良好格式]
+    
+    Revise --> Q1
+    Optimize --> Q3
+    
+    style Start fill:#6f42c1,stroke:#333,stroke-width:2px,color:#fff
+    style Q1 fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Q2 fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Q3 fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+    style Good fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Revise fill:#dc3545,stroke:#333,stroke-width:1px,color:#fff
+    style Optimize fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+</div>
+
+<table>
+<tr><th>原则</th><th>说明</th></tr>
+<tr><td>**足够思考时间**</td><td>让模型有足够tokens"思考"</td></tr>
+<tr><td>**自然格式**</td><td>接近自然文本中的出现方式</td></tr>
+<tr><td>**避免开销**</td><td>无需精确行数计数、无需代码转义</td></tr>
+</table>
+
+<h4>2. 工具定义最佳实践</h4>
+
+<ul>
+<li><strong>包含内容</strong>：</li>
+<li>示例用法</li>
+<li>边界情况</li>
+<li>输入格式要求</li>
+<li>与其他工具的清晰边界</li>
+
+<li><strong>类比</strong>：像给团队初级开发者写优秀的文档字符串</li>
+
+</ul>
+<h4>3. 测试迭代</h4>
+
+<ol>
+<li>在workbench中运行大量示例输入</li>
+</ol>
+<ol>
+<li>观察模型犯错模式</li>
+</ol>
+<ol>
+<li>根据观察结果迭代改进</li>
+
+</ol>
+<h4>4. Poka-yoke（防错）</h4>
+
+<p><strong>概念</strong>：改变参数使更难出错</p>
+
+<p><strong>示例</strong>：</p>
+<ul>
+<li>要求绝对路径而非相对路径</li>
+<li>使用枚举而非自由文本</li>
+
+</ul>
+<blockquote>在SWE-bench项目中，Anthropic团队花在优化工具上的时间甚至超过优化整体提示。</blockquote>
+
+<hr/>
+
+<h2>七、实践案例</h2>
+
+<h3>案例A：客服支持</h3>
+
+<p><strong>系统架构图</strong>：</p>
+
+<div class="mermaid">
+graph TD
+    User[用户] --> Chatbot[客服Agent]
+    Chatbot --> Tool1[订单查询]
+    Chatbot --> Tool2[退款处理]
+    Chatbot --> Tool3[知识库]
+    Tool1 --> DB1[(订单数据库)]
+    Tool2 --> DB2[(支付系统)]
+    Tool3 --> KB[知识库文章]
+    
+    Chatbot --> Feedback{人工监督}
+    Feedback --> Chatbot
+    
+    style User fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Chatbot fill:#6f42c1,stroke:#333,stroke-width:2px,color:#fff
+    style Feedback fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<p><strong>天然契合点</strong>：</p>
+<ul>
+<li>支持交互自然遵循对话流</li>
+<li>需要访问外部信息和执行操作</li>
+<li>成功可通过用户定义的解决标准清晰衡量</li>
+
+</ul>
+<p><strong>成功因素</strong>：</p>
+<ul>
+<li>清晰的成功标准</li>
+<li>反馈循环</li>
+<li>人工监督</li>
+
+</ul>
+<p><strong>商业模式</strong>：一些公司采用按使用量计费，只对成功解决收费</p>
+
+<hr/>
+
+<h3>案例B：编码Agent</h3>
+
+<p><strong>SWE-bench任务处理流程</strong>：</p>
+
+<div class="mermaid">
+graph TD
+    Task[GitHub Issue描述] --> Analyze[理解需求]
+    Analyze --> Plan[制定修改计划]
+    Plan --> Execute1[修改文件1]
+    Plan --> Execute2[修改文件2]
+    Plan --> ExecuteN[修改文件N]
+    
+    Execute1 --> Test1[运行测试]
+    Execute2 --> Test2[运行测试]
+    ExecuteN --> TestN[运行测试]
+    
+    Test1 --> Pass1{通过?}
+    Test2 --> Pass2{通过?}
+    TestN --> PassN{通过?}
+    
+    Pass1 -->|失败| Fix1[修复问题]
+    Pass2 -->|失败| Fix2[修复问题]
+    PassN -->|失败| FixN[修复问题]
+    Fix1 --> Test1
+    Fix2 --> Test2
+    FixN --> TestN
+    
+    Pass1 -->|是| Success{全部通过?}
+    Pass2 -->|是| Success
+    PassN -->|是| Success
+    
+    Success -->|是| Submit[提交PR]
+    Success -->|否| Review[人工审查]
+    Review --> Submit
+    
+    style Task fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Analyze fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Plan fill:#6f42c1,stroke:#333,stroke-width:2px,color:#fff
+    style Execute1 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Execute2 fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style ExecuteN fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Submit fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Review fill:#ffc107,stroke:#333,stroke-width:2px,color:#333
+</div>
+
+<p><strong>天然契合点</strong>：</p>
+<ul>
+<li>代码解决方案可通过自动化测试验证</li>
+<li>Agent可使用测试结果作为反馈迭代</li>
+<li>问题空间定义清晰且结构化</li>
+<li>输出质量可客观测量</li>
+
+</ul>
+<p><strong>成果</strong>：</p>
+<ul>
+<li>在SWE-bench Verified基准测试中，Agent现在可以仅根据PR描述解决真实GitHub问题</li>
+<li>自动化测试验证功能，但人工审查对于确保解决方案符合更广泛的系统要求仍然至关重要</li>
+
+</ul>
+<hr/>
+
+<h2>八、核心原则总结</h2>
+
+<pre><code class="language-text">
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│   成功不在于构建最复杂的系统，                              │
+│   而在于构建最适合你需求的系统。                            │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+
+<h3>系统复杂度阶梯</h3>
+
+<div class="mermaid">
+graph LR
+    subgraph "复杂度递增"
+        Level1[1. 简单提示] --> Level2[2. 单次LLM调用]
+        Level2 --> Level3[3. RAG检索增强]
+        Level3 --> Level4[4. Workflows工作流]
+        Level4 --> Level5[5. Agents代理]
+    end
+    
+    Level1 -->|"不足时"| Level2
+    Level2 -->|"不足时"| Level3
+    Level3 -->|"不足时"| Level4
+    Level4 -->|"不足时"| Level5
+    
+    style Level1 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Level2 fill:#007bff,stroke:#333,stroke-width:2px,color:#fff
+    style Level3 fill:#6c757d,stroke:#333,stroke-width:2px,color:#fff
+    style Level4 fill:#6f42c1,stroke:#333,stroke-width:2px,color:#fff
+    style Level5 fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<h3>核心三原则</h3>
+
+<div class="mermaid">
+graph TD
+    Principle[Agent设计核心原则]
+    P1[1. 保持设计简单<br/>Simplicity]
+    P2[2. 优先透明性<br/>Transparency]
+    P3[3. 精心设计ACI<br/>ACI Design]
+    
+    Principle --> P1
+    Principle --> P2
+    Principle --> P3
+    
+    P1 --> P1a[避免不必要复杂性]
+    P1 --> P1b[从简单开始]
+    
+    P2 --> P2a[展示规划步骤]
+    P2 --> P2a[让用户理解决策]
+    
+    P3 --> P3a[完善的工具文档]
+    P3 --> P3b[充分的工具测试]
+    
+    style Principle fill:#6f42c1,stroke:#333,stroke-width:3px,color:#fff
+    style P1 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style P2 fill:#007bff,stroke:#333,stroke-width:2px,color:#fff
+    style P3 fill:#dc3545,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<h3>行动指南</h3>
+
+<ol>
+<li><strong>从简单开始</strong> - 从简单提示开始</li>
+</ol>
+<ol>
+<li><strong>数据驱动</strong> - 用全面评估优化</li>
+</ol>
+<ol>
+<li><strong>按需复杂</strong> - 只在简单方案不足时才添加Agentic系统</li>
+</ol>
+<ol>
+<li><strong>善用框架</strong> - 框架可快速起步，但生产环境要敢于减少抽象层</li>
+
+</ol>
+<hr/>
+
+<h2>九、附录：常用框架</h2>
+
+<h3>框架对比</h3>
+
+<div class="mermaid">
+graph LR
+    subgraph "框架类型"
+        SDK[SDK类] --> CLI[CLI类]
+        GUI[GUI类] --> Vellum[Vellum]
+    end
+    
+    subgraph "SDK类"
+        ClaudeSDK[Claude Agent SDK]
+        Strands[Strands Agents SDK]
+    end
+    
+    subgraph "GUI类"
+        RivetGUI[Rivet]
+        VellumGUI[Vellum]
+    end
+    
+    ClaudeSDK -->|"Anthropic官方"| Recommend1[✓ 推荐起步]
+    Strands -->|"AWS出品"| Recommend2[✓ 云原生]
+    RivetGUI -->|"拖拽式"| Recommend3[✓ 可视化]
+    VellumGUI -->|"测试友好"| Recommend4[✓ 复杂工作流]
+    
+    style ClaudeSDK fill:#007bff,stroke:#333,stroke-width:1px,color:#fff
+    style Strands fill:#6c757d,stroke:#333,stroke-width:1px,color:#fff
+    style RivetGUI fill:#28a745,stroke:#333,stroke-width:1px,color:#fff
+    style VellumGUI fill:#6f42c1,stroke:#333,stroke-width:1px,color:#fff
+    style Recommend1 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Recommend2 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Recommend3 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style Recommend4 fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+</div>
+
+<table>
+<tr><th>框架</th><th>特点</th></tr>
+<tr><td>[Claude Agent SDK](https://platform.claude.com/docs/en/agent-sdk/overview)</td><td>Anthropic官方</td></tr>
+<tr><td>[Strands Agents SDK by AWS](https://strandsagents.com/latest/)</td><td>AWS出品</td></tr>
+<tr><td>[Rivet](https://rivet.ironcladapp.com/)</td><td>拖拽式GUI工作流构建器</td></tr>
+<tr><td>[Vellum](https://www.vellum.ai/)</td><td>GUI复杂工作流构建和测试工具</td></tr>
+</table>
+
+<p><strong>建议</strong>：从直接使用LLM API开始，许多模式可以用几行代码实现。</p>
+
+<hr/>
+
+<h2>参考资料</h2>
+
+<ul>
+<li>原文：https://www.anthropic.com/engineering/building-effective-agents</li>
+<li>Claude Agent SDK：https://platform.claude.com/docs/en/agent-sdk/overview</li>
+<li>Model Context Protocol：https://www.anthropic.com/news/model-context-protocol</li>
+<li>Anthropic Cookbook（示例实现）：https://platform.claude.com/cookbook/patterns-agents-basic-workflows</li>
+<li>SWE-bench Verified：https://www.anthropic.com/research/swe-bench-sonnet</li>
+
+</ul>
+<hr/>
+
+<p><em>文档生成时间：2026-02-07</em></p>
+</article></main>
+<footer><p>📅 最后更新: 2026-02-07</p><p>Built with ❤️</p></footer>
+</body>
+</html>
