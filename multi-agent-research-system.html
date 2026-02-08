@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多代理研究系统 | 技术博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center}
+header h1{font-size:2.5em;margin-bottom:10px}
+header p{opacity:0.9}
+nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
+nav a{margin-right:25px;text-decoration:none;color:#667eea;font-weight:600}
+nav a:hover{color:#764ba2}
+article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+article h1{color:#667eea;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #667eea}
+article h2{color:#764ba2;margin:35px 0 15px}
+article h3{color:#444;margin:25px 0 10px}
+article p{margin:15px 0}
+article a{color:#667eea;text-decoration:none}
+article a:hover{text-decoration:underline}
+article code{background:#f4f4f4;padding:3px 8px;border-radius:4px;font-family:monospace}
+article pre{background:#2d3748;color:#f8f8f2;padding:20px;border-radius:8px;overflow-x:auto;margin:20px 0}
+article pre code{background:none;color:inherit;padding:0}
+article ul,article ol{margin:15px 0 15px 30px}
+article li{margin:8px 0}
+article blockquote{border-left:4px solid #667eea;padding:15px 20px;margin:20px 0;background:#f7f7fa;border-radius:0 8px 8px 0}
+article table{width:100%;border-collapse:collapse;margin:20px 0}
+article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
+article th{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+article tr:nth-child(even){background:#f7f7fa}
+article tr:hover{background:#edf2f7}
+.chart{background:#f8f9fa;padding:30px;margin:20px 0;border-radius:12px;text-align:center}
+.chart-row{display:flex;justify-content:center;align-items:center;gap:20px;margin:15px 0;flex-wrap:wrap}
+.chart-node{padding:15px 25px;border-radius:8px;font-weight:500;min-width:120px}
+.chart-arrow{font-size:24px;color:#667eea}
+.chart-subtitle{font-size:14px;color:#666;margin:10px 0;font-weight:bold}
+.flowchart{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px}
+.flow-row{display:flex;align-items:center;gap:15px;flex-wrap:wrap;justify-content:center}
+.flow-node{padding:12px 20px;border-radius:6px;font-size:14px}
+.flow-arrow{font-size:20px;color:#667eea;font-weight:bold}
+.card-container{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.card{background:white;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);min-width:150px}
+.card-title{font-weight:bold;margin-bottom:10px;color:#667eea}
+.card-content{font-size:14px;color:#666}
+.card-icon{font-size:30px;margin-bottom:10px}
+.comparison-box{display:flex;gap:20px;margin:20px 0}
+.comparison-item{flex:1;padding:20px;border-radius:10px}
+.comparison-item.good{background:#d4edda;border:2px solid #28a745}
+.comparison-item.bad{background:#f8d7da;border:2px solid #e1306c}
+.comparison-item.neutral{background:#e9ecef;border:2px solid #6c757d}
+.framework-card{background:white;border:2px solid #e9ecef;border-radius:10px;padding:15px;text-align:center;flex:1;min-width:180px}
+.framework-name{font-weight:bold;color:#667eea;margin-bottom:8px}
+.framework-desc{font-size:12px;color:#666}
+footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
+@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+.node-green{background:#28a745;color:white;border:2px solid #28a745}
+.node-blue{background:#007bff;color:white;border:2px solid #007bff}
+.node-purple{background:#6f42c1;color:white;border:2px solid #6f42c1}
+.node-yellow{background:#ffc107;color:#333;border:2px solid #ffc107}
+.node-red{background:#e1306c;color:white;border:2px solid #e1306c}
+.node-teal{background:#17a2b8;color:white;border:2px solid #17a2b8}
+.node-gray{background:#6c757d;color:white;border:2px solid #6c757d}
+</style>
+</head>
+<body>
+<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
+<nav class="container"><a href="index.html">🏠 首页</a><a href="multi-agent-research-system.html">🤝 多代理研究</a><a href="effective-harnesses-long-running-agents.html">🔄 长期运行</a><a href="building-effective-agents.html">🤖 Effective Agents</a></nav>
+<main class="container"><article><h1>如何构建多代理研究系统</h1>
+
+<blockquote>作者：Jeremy Hadfield, Barry Zhang, Kenneth Lien, Florian Scholz, Jeremy Fox, Daniel Ford (Anthropic)</blockquote>
+<blockquote>阅读时间：2026-02-08</blockquote>
+<blockquote>翻译：HinnBot</blockquote>
+
+<hr/>
+
+<h2>一、引言</h2>
+
+<p>Claude现在拥有Research功能，允许它搜索网络、Google Workspace和任何集成来完成复杂任务。</p>
+
+<p>这个多代理系统从原型到生产的旅程教会了我们关于系统架构、工具设计和提示工程的关键教训。多代理系统由多个代理（LLM在循环中自主使用工具）组成，它们协同工作。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">Research 功能架构</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">用户查询</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">主代理</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">子代理并行搜索</div>
+        </div>
+    </div>
+</div>
+
+<hr/>
+
+<h2>二、多代理系统的好处</h2>
+
+<p>研究工作涉及开放式问题，很难提前预测所需的步骤。线性、一次性的管道无法处理这些任务。</p>
+
+<blockquote>
+💡 <strong>核心洞察</strong>：搜索的本质是压缩——从大量语料库中提炼见解。
+</blockquote>
+
+<h3>子代理如何促进压缩</h3>
+
+<ul>
+<li>在独立的上下文中并行操作</li>
+<li>同时探索问题的不同方面</li>
+<li>在为主代理压缩最重要的token之前</li>
+<li>提供关注点分离——不同的工具、提示和探索轨迹</li>
+</ul>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 多代理系统的优势</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>灵活性：能够根据发现动态调整方法</li>
+            <li>自主性：模型可以自主运行多个轮次</li>
+            <li>并行化：同时追求多个独立方向</li>
+        </ul>
+    </div>
+</div>
+
+<h3>性能对比</h3>
+
+<p>我们的内部评估表明，多代理研究系统在涉及同时追求多个独立方向的广度优先查询中表现尤为出色。</p>
+
+<table>
+<tr><th>系统配置</th><th>性能提升</th></tr>
+<tr><td>多代理系统（Opus 4主代理 + Sonnet 4子代理）</td><td>比单代理Opus 4提升<strong>90.2%</strong></td></tr>
+</table>
+
+<p>例如，当被要求识别信息技术标准普尔500指数中所有公司的董事会成员时，多代理系统通过将任务分解为子代理找到了正确答案，而单代理系统则因缓慢的顺序搜索而失败。</p>
+
+<h3>Token使用的关键发现</h3>
+
+<p>多代理系统之所以有效，主要是因为它们帮助花费足够的token来解决问题。在我们的分析中，三个因素解释了BrowseComp评估中95%的性能差异：</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-title">📊 Token使用</div>
+        <div class="card-content">解释了80%的差异</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-title">🔧 工具调用次数</div>
+        <div class="card-content">重要因素</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-title">🤖 模型选择</div>
+        <div class="card-content">重要因素</div>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>关键发现</strong>：多代理架构有效地扩展了token使用，适用于超出单代理限制的任务。
+</blockquote>
+
+<h3>成本考量</h3>
+
+<div class="comparison-box">
+    <div class="comparison-item neutral">
+        <strong>📈 Token使用对比</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>单代理：1×</li>
+            <li>多代理系统：约15×</li>
+        </ul>
+    </div>
+    <div class="comparison-item bad">
+        <strong>⚠️ 不适用场景</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>需要所有代理共享同一上下文</li>
+            <li>代理之间有许多依赖关系</li>
+            <li>大多数编码任务（并行化程度低）</li>
+        </ul>
+    </div>
+</div>
+
+<hr/>
+
+<h2>三、Research 架构概述</h2>
+
+<p>我们的Research系统使用编排器-工作者模式的多代理架构，其中主代理协调流程，同时委托在并行中操作的专门子代理。</p>
+
+<h3>工作流程</h3>
+
+<div class="chart">
+    <div class="chart-subtitle">多代理 Research 系统工作流程</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">用户查询</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">主代理</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">子代理</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-orange">↓ 迭代研究</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-teal">CitationAgent 生成引用</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-red">返回最终结果</div>
+        </div>
+    </div>
+</div>
+
+<h3>与传统RAG的对比</h3>
+
+<table>
+<tr><th>传统RAG</th><th>多代理架构</th></tr>
+<tr><td>静态检索</td><td>多步骤搜索，动态查找相关信息</td></tr>
+<tr><td>获取最相似的块</td><td>根据新发现调整</td></tr>
+<tr><td>一次性生成响应</td><td>分析结果以制定高质量答案</td></tr>
+</table>
+
+<h3>系统组件</h3>
+
+<ul>
+<li><strong>LeadResearcher代理</strong>：分析查询，制定策略</li>
+<li><strong>Subagents</strong>：使用搜索工具收集信息</li>
+<li><strong>Memory</strong>：持久化上下文（超过200K token时截断）</li>
+<li><strong>CitationAgent</strong>：识别引用的具体位置</li>
+</ul>
+
+<hr/>
+
+<h2>四、提示工程与评估</h2>
+
+<p>多代理系统与单代理系统有关键区别，包括协调复杂性的快速增长。以下是我们学到的提示原则：</p>
+
+<h3>4.1 像代理一样思考</h3>
+
+<p>要迭代提示，你必须理解它们的效果。我们使用模拟来帮助我们做到这一点——使用系统中的确切提示和工具，观察代理逐步工作。</p>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 立即可见的失败模式</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>代理在已有足够结果时继续</li>
+            <li>使用过于冗长的搜索查询</li>
+            <li>选择错误的工具</li>
+        </ul>
+    </div>
+</div>
+
+<h3>4.2 教编排器如何委派</h3>
+
+<p>在我们的系统中，主代理将查询分解为子任务并向子代理描述它们。每个子代理需要：</p>
+
+<ul>
+<li>目标</li>
+<li>输出格式</li>
+<li>关于使用的工具和来源的指导</li>
+<li>清晰的任务边界</li>
+</ul>
+
+<blockquote>
+💡 <strong>教训</strong>：简单的短指令往往模糊，子代理会误解任务或执行完全相同的搜索。
+</blockquote>
+
+<h3>4.3 根据查询复杂性扩展工作量</h3>
+
+<table>
+<tr><th>任务类型</th><th>代理数量</th><th>工具调用次数</th></tr>
+<tr><td>简单事实查找</td><td>1个代理</td><td>3-10次</td></tr>
+<tr><td>直接比较</td><td>2-4个子代理</td><td>每个10-15次</td></tr>
+<tr><td>复杂研究</td><tdtd>超过10个子代理</td><td>明确分工</td></tr>
+</table>
+
+<h3>4.4 工具设计和选择</h3>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-title">🔍 明确启发式</div>
+        <div class="card-content">
+            <ul>
+                <li>首先检查所有可用工具</li>
+                <li>将工具使用与用户意图匹配</li>
+                <li>搜索网络进行广泛的外部探索</li>
+                <li>优先使用专业工具而非通用工具</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<h3>4.5 让代理改进自己</h3>
+
+<p>我们发现Claude 4模型可以是优秀的提示工程师。当给出提示和失败模式时，它们能够诊断代理失败的原因并建议改进。</p>
+
+<blockquote>
+💡 <strong>成果</strong>：工具测试代理发现了关键的细微差别和错误，使任务完成时间减少了40%。
+</blockquote>
+
+<h3>4.6 先广后窄</h3>
+
+<p>搜索策略应该模仿专家人类研究：先探索全景再深入细节。代理通常默认使用过于具体的长查询，返回很少的结果。</p>
+
+<h3>4.7 指导思考过程</h3>
+
+<ul>
+<li><strong>Extended thinking</strong>：主代理使用思考来规划方法</li>
+<li><strong>Interleaved thinking</strong>：子代理在工具结果后评估质量、识别差距、改进查询</li>
+</ul>
+
+<h3>4.8 并行工具调用</h3>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 两种并行化</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>主代理并行启动3-5个子代理</li>
+            <li>子代理并行使用3+个工具</li>
+        </ul>
+    </div>
+</div>
+
+<p>这些变化将复杂查询的研究时间缩短了<strong>90%</strong>。</p>
+
+<hr/>
+
+<h2>五、代理的有效评估</h2>
+
+<p>构建可靠的AI应用需要良好的评估，代理也不例外。然而，评估多代理系统面临独特挑战。</p>
+
+<h3>5.1 立即开始小样本评估</h3>
+
+<p>在早期代理开发中，变化往往产生巨大影响。一个提示调整可能将成功率从30%提高到80%。效果如此之大，你可以通过几个测试用例发现变化。</p>
+
+<h3>5.2 LLM作为评判者</h3>
+
+<p>研究输出难以程序化评估，因为它们是自由形式的文本，很少有单一正确答案。LLM是评分的自然选择。</p>
+
+<h4>评估维度</h4>
+
+<ul>
+<li><strong>事实准确性</strong>：索赔是否与来源匹配？</li>
+<li><strong>引用准确性</strong>：引用的来源是否与索赔匹配？</li>
+<li><strong>完整性</strong>：是否涵盖了所有要求的方面？</li>
+<li><strong>来源质量</strong>：是否使用了一手来源而非低质量的二手来源？</li>
+<li><strong>工具效率</strong>：是否以合理次数使用了正确的工具？</li>
+</ul>
+
+<h3>5.3 人工评估</h3>
+
+<p>测试代理的人会发现评估遗漏的边缘情况：</p>
+
+<ul>
+<li>不寻常查询上的幻觉答案</li>
+<li>系统故障</li>
+<li>微妙的来源选择偏差</li>
+</ul>
+
+<blockquote>
+💡 <strong>发现</strong>：早期代理一致选择SEO优化的内容农场，而非权威但排名较低的来源（如学术PDF或个人博客）。
+</blockquote>
+
+<h3>5.4 涌现行为</h3>
+
+<p>多代理系统具有涌现行为——无需特定编程即可产生。小的主代理变化可以不可预测地改变子代理的行为。</p>
+
+<hr/>
+
+<h2>六、生产可靠性与工程挑战</h2>
+
+<p>在传统软件中，bug可能会破坏功能、降低性能或导致停机。在代理系统中， minor changes cascade into large behavioral changes。</p>
+
+<h3>6.1 有状态性和错误累积</h3>
+
+<p>代理可以长时间运行，在许多工具调用中保持状态。这意味着我们需要耐久地执行代码并处理错误。</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-title">🔧 解决方案</div>
+        <div class="card-content">
+            <ul>
+                <li>构建可以从错误发生处恢复的系统</li>
+                <li>使用模型的智能优雅地处理问题</li>
+                <li>结合确定性保障措施（重试逻辑、定期检查点）</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<h3>6.2 调试需要新方法</h3>
+
+<p>代理做出动态决策，即使提示相同，运行之间也是非确定性的。添加完整的生产跟踪让我们能够诊断代理失败的原因并系统地修复问题。</p>
+
+<h3>6.3 部署需要仔细协调</h3>
+
+<p>我们使用<a href="https://brandon.dimcheff.com/2018/02/rainbow-deploys-with-kubernetes/" target="_blank">彩虹部署</a>来避免干扰正在运行的代理，通过逐渐将流量从旧版本转移到新版本，同时保持两者同时运行。</p>
+
+<h3>6.4 同步执行的瓶颈</h3>
+
+<p>目前，我们的主代理同步执行子代理，等待每组子代理完成后再继续。这简化了协调，但在代理之间的信息流中造成瓶颈。</p>
+
+<blockquote>
+💡 <strong>未来方向</strong>：异步执行将实现额外的并行性，但会增加结果协调、状态一致性和错误传播方面的挑战。
+</blockquote>
+
+<hr/>
+
+<h2>七、总结</h2>
+
+<div class="card-container">
+    <div class="card" style="flex:1;background:#28a745;color:white;border:none;">
+        <div class="card-title" style="color:white;">📈 显著性能提升</div>
+        <div class="card-content" style="color:white;">比单代理系统提升90.2%</div>
+    </div>
+    <div class="card" style="flex:1;background:#667eea;color:white;border:none;">
+        <div class="card-title" style="color:white;">🔄 编排器-工作者模式</div>
+        <div class="card-content" style="color:white;">主代理协调，子代理并行</div>
+    </div>
+    <div class="card" style="flex:1;background:#764ba2;color:white;border:none;">
+        <div class="card-title" style="color:white;">⚡ 90%时间缩短</div>
+        <div class="card-content" style="color:white;">并行化带来的速度提升</div>
+    </div>
+</div>
+
+<p>尽管存在这些挑战，多代理系统已被证明对开放式研究任务很有价值。用户表示Claude帮助他们发现了未曾考虑的商业机会，导航复杂的医疗选项，解决棘枝的技术bug，并通过揭示他们自己不会发现的研究联系来节省多达数天的工作。</p>
+
+<hr/>
+
+<h2>八、附录：多代理系统额外技巧</h2>
+
+<h3>8.1 评估改变状态的代理</h3>
+
+<p>评估在多轮对话中修改持久状态的代理面临独特挑战。我们发现成功专注于最终状态评估而非逐轮分析——评估代理是否实现了正确的最终状态。</p>
+
+<h3>8.2 长期对话管理</h3>
+
+<p>生产代理经常参与跨越数百轮对话，需要仔细的上下文管理策略。我们实现了代理总结已完成的工作阶段并将基本信息存储在外部存储器中的模式。</p>
+
+<h3>8.3 子代理输出到文件系统</h3>
+
+<p>直接子代理输出可以绕过主协调器以提高保真度和性能。实现工件系统，专门代理可以创建独立存在的输出。</p>
+
+<hr/>
+
+<h3>参考资源</h3>
+
+<ul>
+<li><a href="https://platform.claude.com/cookbook/patterns-agents-basic-workflows" target="_blank">Claude Agent SDK Cookbook</a></li>
+<li><a href="https://www.anthropic.com/research/clio" target="_blank">Clio 研究</a></li>
+<li><a href="https://openai.com/index/browsecomp/" target="_blank">BrowseComp 评估</a></li>
+<li><a href="https://modelcontextprotocol.io/introduction" target="_blank">MCP 服务器</a></li>
+</ul>
+
+<hr/>
+
+<p><em>文档生成时间：2026-02-08</em></p>
+<p><em>原文链接：https://www.anthropic.com/engineering/multi-agent-research-system</em></p>
+</article></main>
+<footer><p>📅 最后更新: 2026-02-08</p><p>Built with ❤️</p></footer>
+</body>
+</html>
