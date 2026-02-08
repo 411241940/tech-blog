@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长期运行 Agents 的有效框架 | 技术博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center}
+header h1{font-size:2.5em;margin-bottom:10px}
+header p{opacity:0.9}
+nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
+nav a{margin-right:25px;text-decoration:none;color:#667eea;font-weight:600}
+nav a:hover{color:#764ba2}
+article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+article h1{color:#667eea;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #667eea}
+article h2{color:#764ba2;margin:35px 0 15px}
+article h3{color:#444;margin:25px 0 10px}
+article p{margin:15px 0}
+article a{color:#667eea;text-decoration:none}
+article a:hover{text-decoration:underline}
+article code{background:#f4f4f4;padding:3px 8px;border-radius:4px;font-family:monospace}
+article pre{background:#2d3748;color:#f8f8f2;padding:20px;border-radius:8px;overflow-x:auto;margin:20px 0}
+article pre code{background:none;color:inherit;padding:0}
+article ul,article ol{margin:15px 0 15px 30px}
+article li{margin:8px 0}
+article blockquote{border-left:4px solid #667eea;padding:15px 20px;margin:20px 0;background:#f7f7fa;border-radius:0 8px 8px 0}
+article table{width:100%;border-collapse:collapse;margin:20px 0}
+article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
+article th{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+article tr:nth-child(even){background:#f7f7fa}
+article tr:hover{background:#edf2f7}
+.chart{background:#f8f9fa;padding:30px;margin:20px 0;border-radius:12px;text-align:center}
+.chart-row{display:flex;justify-content:center;align-items:center;gap:20px;margin:15px 0;flex-wrap:wrap}
+.chart-node{padding:15px 25px;border-radius:8px;font-weight:500;min-width:120px}
+.chart-arrow{font-size:24px;color:#667eea}
+.chart-subtitle{font-size:14px;color:#666;margin:10px 0;font-weight:bold}
+.flowchart{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px}
+.flow-row{display:flex;align-items:center;gap:15px;flex-wrap:wrap;justify-content:center}
+.flow-node{padding:12px 20px;border-radius:6px;font-size:14px}
+.flow-arrow{font-size:20px;color:#667eea;font-weight:bold}
+.card-container{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.card{background:white;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);min-width:150px}
+.card-title{font-weight:bold;margin-bottom:10px;color:#667eea}
+.card-content{font-size:14px;color:#666}
+.card-icon{font-size:30px;margin-bottom:10px}
+.comparison-box{display:flex;gap:20px;margin:20px 0}
+.comparison-item{flex:1;padding:20px;border-radius:10px}
+.comparison-item.good{background:#d4edda;border:2px solid #28a745}
+.comparison-item.bad{background:#f8d7da;border:2px solid #e1306c}
+.comparison-item.neutral{background:#e9ecef;border:2px solid #6c757d}
+.framework-card{background:white;border:2px solid #e9ecef;border-radius:10px;padding:15px;text-align:center;flex:1;min-width:180px}
+.framework-name{font-weight:bold;color:#667eea;margin-bottom:8px}
+.framework-desc{font-size:12px;color:#666}
+footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
+@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+.node-green{background:#28a745;color:white;border:2px solid #28a745}
+.node-blue{background:#007bff;color:white;border:2px solid #007bff}
+.node-purple{background:#6f42c1;color:white;border:2px solid #6f42c1}
+.node-yellow{background:#ffc107;color:#333;border:2px solid #ffc107}
+.node-red{background:#e1306c;color:white;border:2px solid #e1306c}
+.node-teal{background:#17a2b8;color:white;border:2px solid #17a2b8}
+.node-gray{background:#6c757d;color:white;border:2px solid #6c757d}
+</style>
+</head>
+<body>
+<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
+<nav class="container"><a href="index.html">🏠 首页</a><a href="building-effective-agents.html">🤖 Effective Agents</a><a href="effective-harnesses-long-running-agents.html">🔄 长期运行</a><a href="claude-agent-sdk.html">🔧 Claude SDK</a></nav>
+<main class="container"><article><h1>长期运行 Agents 的有效框架</h1>
+
+<blockquote>作者：Justin Young (Anthropic)</blockquote>
+<blockquote>阅读时间：2026-02-08</blockquote>
+<blockquote>翻译：HinnBot</blockquote>
+
+<hr/>
+
+<h2>一、引言</h2>
+
+<p>随着AI agent变得越来越强大，开发者越来越多地要求它们承担需要数小时甚至数天工作的复杂任务。然而，让agent在多个上下文窗口中保持一致的进展仍然是一个开放性问题。</p>
+
+<p>长期运行agent的核心挑战在于它们必须以离散会话的方式工作，每个新会话开始时对之前发生的事情没有记忆。想象一下一个软件项目由轮班工程师管理，每个新工程师到达时都不记得前一班发生了什么。</p>
+
+<blockquote>
+💡 <strong>核心问题</strong>：由于上下文窗口有限，且大多数复杂项目无法在单个窗口内完成，agent需要一种方法来弥合编码会话之间的差距。
+</blockquote>
+
+<div class="chart">
+    <div class="chart-subtitle">长期运行 Agent 的挑战</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">会话 1</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-gray">无记忆</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">会话 2</div>
+        </div>
+    </div>
+</div>
+
+<hr/>
+
+<h2>二、长期运行 Agent 的问题</h2>
+
+<p>Claude Agent SDK是一个强大的通用agent框架，擅长编码和其他需要模型使用工具来收集上下文、规划和执行的任务。它具有上下文管理功能，如压缩，使agent能够在不耗尽上下文窗口的情况下处理任务。</p>
+
+<p>然而，压缩是不够的。即使是Claude Agent SDK上的前沿编码模型（如Opus 4.5），如果只被给予高级提示（如"构建一个claude.ai克隆"），在多个上下文窗口的循环中也难以构建生产质量的Web应用。</p>
+
+<h3>Claude 的两种失败模式</h3>
+
+<div class="comparison-box">
+    <div class="comparison-item bad">
+        <strong>❌ 模式一：试图一次性完成太多</strong>
+        <p style="margin-top:10px;">agent倾向于一次性尝试完成所有任务，这通常导致模型在实现中途耗尽上下文，使下一个会话从半实现且未记录的功能开始。</p>
+    </div>
+</div>
+
+<div class="comparison-box">
+    <div class="comparison-item bad">
+        <strong>❌ 模式二：过早宣布任务完成</strong>
+        <p style="margin-top:10px;">在项目后期，在构建了一些功能后，后来的agent实例会环顾四周，看到已经取得的进展，然后宣布工作完成。</p>
+    </div>
+</div>
+
+<hr/>
+
+<h2>三、解决方案：双代理架构</h2>
+
+<p>我们开发了一个双管齐下的解决方案，使Claude Agent SDK能够在许多上下文中有效工作：</p>
+
+<div class="chart">
+    <div class="chart-subtitle">双代理解决方案</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-green">初始化 Agent</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">编码 Agent</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-gray">首次运行设置环境</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-orange">每个会话逐步推进</div>
+        </div>
+    </div>
+</div>
+
+<h3>1. 初始化 Agent（Initializer Agent）</h3>
+
+<p>第一个agent会话使用专门的提示，要求模型设置初始环境：</p>
+
+<ul>
+<li>`init.sh` 脚本</li>
+<li>`claude-progress.txt` 文件，记录agent已做了什么</li>
+<li>显示添加了哪些文件的初始git提交</li>
+</ul>
+
+<h3>2. 编码 Agent（Coding Agent）</h3>
+
+<p>每个后续会话要求模型逐步推进，然后留下结构化的更新。关键洞察是找到一种方法，让agent在从新鲜上下文窗口开始时快速理解工作状态。</p>
+
+<hr/>
+
+<h2>四、环境管理</h2>
+
+<p>在<a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices" target="_blank">Claude 4提示指南</a>中，我们分享了多上下文窗口工作流的最佳实践，包括使用"第一个上下文窗口不同提示"的框架结构。</p>
+
+<h3>4.1 功能列表（Feature List）</h3>
+
+<p>为了解决agent一次性完成应用或过早认为项目完成的问题，我们提示初始化代理编写一个扩展用户初始提示的全面功能需求文件。</p>
+
+<p>在claude.ai克隆示例中，这意味着超过200个功能，例如"用户可以打开新聊天，输入查询，按回车，并看到AI响应"。这些功能最初都被标记为"失败"，以便后续编码代理有完整功能的清晰大纲。</p>
+
+<pre><code>{
+  "category": "functional",
+  "description": "新建聊天按钮创建新对话",
+  "steps": [
+    "导航到主界面",
+    "点击'新建聊天'按钮",
+    "验证创建了新对话",
+    "检查聊天区域显示欢迎状态",
+    "验证对话出现在侧边栏"
+  ],
+  "passes": false
+}</code></pre>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 关键设计</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>使用JSON格式，模型不太可能不当更改</li>
+            <li>只允许更改passes字段状态</li>
+            <li>明确告知移除或编辑测试是不可接受的</li>
+        </ul>
+    </div>
+</div>
+
+<h3>4.2 增量进展</h3>
+
+<p>给定这个初始环境脚手架，下一代编码代理被要求一次只处理一个功能。这种增量方法对于解决agent倾向于一次性做太多事情的问题至关重要。</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-title">🔧 保持清洁状态</div>
+        <div class="card-content">让模型在每次会话后提交带有描述性提交消息的进度，并编写进度文件摘要</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-title">↩️ 代码回滚</div>
+        <div class="card-content">允许模型使用git回滚错误的代码更改并恢复代码库的工作状态</div>
+    </div>
+</div>
+
+<h3>4.3 测试</h3>
+
+<p>我们观察到的另一个主要失败模式是Claude倾向于在不经过适当测试的情况下将功能标记为完成。在构建Web应用的情况下，一旦明确提示使用浏览器自动化工具并像人类用户一样进行所有测试，Claude在验证端到端功能方面表现得相当好。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">测试改进</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">代码更改</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">浏览器自动化测试</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">识别并修复Bug</div>
+        </div>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>效果显著</strong>：向Claude提供这类测试工具大大提高了性能，因为agent能够识别和修复仅从代码中不明显的bug。
+</blockquote>
+
+<hr/>
+
+<h2>五、快速上手</h2>
+
+<p>在上述所有措施到位的情况下，每个编码代理都会被提示按照一系列步骤来定位，有些相当基础但仍然有帮助：</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-icon">📁</div>
+        <div class="card-title">运行 pwd</div>
+        <div class="card-content">查看当前工作目录，只能编辑此目录中的文件</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">📜</div>
+        <div class="card-title">读取进度文件</div>
+        <div class="card-content">阅读git日志和进度文件，了解最近的工作</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">✅</div>
+        <div class="card-title">选择功能</div>
+        <div class="card-content">阅读功能列表，选择最高优先级的未完成功能</div>
+    </div>
+</div>
+
+<h3>典型会话流程</h3>
+
+<pre><code>[Assistant] 我将首先了解情况并理解项目的当前状态。
+[Tool Use] <bash - pwd>
+[Tool Use] <read - claude-progress.txt>
+[Tool Use] <read - feature_list.json>
+
+[Assistant] 让我检查git日志以了解最近的工作。
+[Tool Use] <bash - git log --oneline -20>
+
+[Assistant] 现在让我检查是否有init.sh脚本来重启服务器。
+[Starts the development server]
+
+[Assistant] 优秀！现在让我导航到应用程序并验证一些基本功能是否仍然正常工作。
+[Tests basic functionality]
+
+[Assistant] 根据我的验证测试，我可以看到基本功能运行良好...
+[Starts work on a new feature]</code></pre>
+
+<hr/>
+
+<h2>六、Agent 失败模式与解决方案</h2>
+
+<table>
+<tr><th>问题</th><th>初始化 Agent 行为</th><th>编码 Agent 行为</th></tr>
+<tr>
+<td><strong>Claude 过早宣布整个项目完成</strong></td>
+<td>设置功能列表文件：基于输入规范，设置包含端到端功能描述的结构化JSON文件</td>
+<td>在会话开始时阅读功能列表文件，选择一个功能开始工作</td>
+</tr>
+<tr>
+<td><strong>Claude 留下有bug或未记录进展的环境</strong></td>
+<td>编写初始git仓库和进度笔记文件</td>
+<td>通过阅读进度笔记文件和git提交日志开始会话，在开发服务器上运行基本测试以捕捉任何未记录的bug</td>
+</tr>
+<tr>
+<td><strong>Claude 过早将功能标记为完成</strong></td>
+<td>设置功能列表文件</td>
+<td>自我验证所有功能。只有在仔细测试后才将功能标记为"通过"</td>
+</tr>
+<tr>
+<td><strong>Claude 必须花时间弄清楚如何运行应用</strong></td>
+<td>编写可以运行开发服务器的init.sh脚本</td>
+<td>通过阅读init.sh开始会话</td>
+</tr>
+</table>
+
+<hr/>
+
+<h2>七、未来工作</h2>
+
+<p>这项研究证明了长期运行agent框架的一套可能的解决方案，使模型能够在多个上下文中逐步取得进展。然而，仍然存在悬而未决的问题。</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-title">🤔 单代理 vs 多代理</div>
+        <div class="card-content">尚不清楚单一通用编码代理是否在所有上下文中表现最佳，或者通过多代理架构是否能实现更好的性能</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-title">🌍 领域泛化</div>
+        <div class="card-content">此演示针对全栈Web应用开发进行了优化。未来方向是将这些发现泛化到其他领域，如科学研究或金融建模</div>
+    </div>
+</div>
+
+<h3>可能的扩展方向</h3>
+
+<ul>
+<li><strong>测试代理</strong>：专门负责测试的代理</li>
+<li><strong>质量保证代理</strong>：专门负责QA的代理</li>
+<li><strong>代码清理代理</strong>：专门负责代码清理的代理</li>
+</ul>
+
+<blockquote>
+💡 <strong>愿景</strong>：这些专门的代理可能在软件开发生命周期中的子任务上做得更好。
+</blockquote>
+
+<hr/>
+
+<h2>八、总结</h2>
+
+<div class="card-container">
+    <div class="card" style="flex:1;background:#28a745;color:white;border:none;">
+        <div class="card-title" style="color:white;">🔄 双代理架构</div>
+        <div class="card-content" style="color:white;">初始化Agent + 编码Agent协同工作</div>
+    </div>
+    <div class="card" style="flex:1;background:#667eea;color:white;border:none;">
+        <div class="card-title" style="color:white;">📋 功能列表</div>
+        <div class="card-content" style="color:white;">结构化JSON管理功能状态</div>
+    </div>
+    <div class="card" style="flex:1;background:#764ba2;color:white;border:none;">
+        <div class="card-title" style="color:white;">🧪 端到端测试</div>
+        <div class="card-content" style="color:white;">浏览器自动化确保质量</div>
+    </div>
+</div>
+
+<p>长期运行agent的核心挑战是上下文窗口的限制和会话间的状态管理。通过双代理架构、功能列表、增量开发和端到端测试，可以有效解决这些问题，使Claude能够在长时间跨度内保持一致的进展。</p>
+
+<hr/>
+
+<h3>参考资源</h3>
+
+<ul>
+<li><a href="https://platform.claude.com/docs/en/agent-sdk/overview" target="_blank">Claude Agent SDK 文档</a></li>
+<li><a href="https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding" target="_blank">自主编码 Quickstart</a></li>
+<li><a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices" target="_blank">Claude 4 最佳实践</a></li>
+<li><a href="https://github.com/sierra-research/tau-bench" target="_blank">τ-Bench 基准测试</a></li>
+</ul>
+
+<hr/>
+
+<p><em>文档生成时间：2026-02-08</em></p>
+<p><em>原文链接：https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents</em></p>
+</article></main>
+<footer><p>📅 最后更新: 2026-02-08</p><p>Built with ❤️</p></footer>
+</body>
+</html>
