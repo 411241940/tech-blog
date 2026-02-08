@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>首页 | 技术博客</title>
+<title>AI Agents 技术博客 | 首页</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
-.container{max-width:900px;margin:0 auto;padding:20px}
+.container{max-width:1100px;margin:0 auto;padding:20px}
 header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center}
 header h1{font-size:2.5em;margin-bottom:10px}
 header p{opacity:0.9}
 nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
-nav a{margin-right:25px;text-decoration:none;color:#667eea;font-weight:600}
+nav a{margin-right:20px;text-decoration:none;color:#667eea;font-weight:600;font-size:14px}
 nav a:hover{color:#764ba2}
 article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
 article h1{color:#667eea;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #667eea}
-article h2{color:#764ba2;margin:35px 0 15px}
+article h2{color:#764ba2;margin:35px 0 15px;font-size:1.5em}
 article h3{color:#444;margin:25px 0 10px}
 article p{margin:15px 0}
 article a{color:#667eea;text-decoration:none}
@@ -30,22 +30,226 @@ article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
 article th{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
 article tr:nth-child(even){background:#f7f7fa}
 article tr:hover{background:#edf2f7}
-article .mermaid{background:white;padding:20px;margin:20px 0;text-align:center}
 footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
-@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+@media(max-width.container{p:768px){adding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+
+/* 分类卡片样式 */
+.category-section{margin:30px 0}
+.category-header{display:flex;align-items:center;gap:15px;padding:20px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;color:white;margin-bottom:20px}
+.category-header h2{margin:0;color:white;font-size:1.5em}
+.category-icon{font-size:2em}
+.article-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.article-card{background:white;border:2px solid #e9ecef;border-radius:12px;padding:20px;transition:all 0.3s ease}
+.article-card:hover{transform:translateY(-5px);box-shadow:0 10px 30px rgba(0,0,0,0.1)}
+.article-card h3{color:#667eea;font-size:1.1em;margin-bottom:10px}
+.article-card p{color:#666;font-size:14px;line-height:1.6;margin-bottom:15px}
+.article-card .tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}
+.tag{background:#f0f0f0;padding:4px 10px;border-radius:20px;font-size:12px;color:#666}
+.tag-blue{background:#e3f2fd;color:#1976d2}
+.tag-purple{background:#f3e5f5;color:#7b1fa2}
+.tag-green{background:#e8f5e9;color:#388e3c}
+.tag-orange{background:#fff3e0;color:#f57c00}
+.article-card a.read-btn{display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:20px;text-decoration:none;font-size:14px;transition:opacity 0.3s}
+.article-card a.read-btn:hover{opacity:0.9}
+
+/* 统计信息 */
+.stats{display:flex;justify-content:center;gap:40px;padding:30px;background:linear-gradient(135deg,#f8f9fa,#e9ecef);border-radius:12px;margin-bottom:30px}
+.stat-item{text-align:center}
+.stat-number{font-size:2.5em;font-weight:bold;color:#667eea}
+.stat-label{color:#666;font-size:14px}
+
+/* 分类概览 */
+.category-overview{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:40px}
+.overview-card{background:white;border-radius:12px;padding:25px;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,0.08);transition:transform 0.3s}
+.overview-card:hover{transform:translateY(-5px)}
+.overview-card .icon{font-size:2.5em;margin-bottom:10px}
+.overview-card h3{color:#667eea;margin-bottom:8px}
+.overview-card p{color:#666;font-size:13px}
+@media(max-width:768px){.category-overview{grid-template-columns:repeat(2,1fr)}.stats{flex-wrap:wrap;gap:20px}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
 </head>
 <body>
-<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
-<nav class="container"><a href="index.html">🏠 首页</a><a href="building-effective-agents.html">🤖 Effective Agents</a><a href="effective-context-engineering.html">📦 Context Engineering</a><a href="contextual-retrieval.html">🔍 Contextual Retrieval</a><a href="claude-agent-sdk.html">🛠️ Claude SDK</a></nav>
-<main class="container"><article><h1>📚 技术报告集</h1><p>欢迎访问！</p>
-<table><tr><th>标题</th><th>描述</th><th>操作</th></tr>
-<tr><td>🤖 Building Effective AI Agents</td><td>构建有效 AI Agents 指南</td><td><a href="building-effective-agents.html">阅读 →</a></td></tr>
-<tr><td>📦 Context Engineering</td><td>上下文工程指南</td><td><a href="effective-context-engineering.html">阅读 →</a></td></tr>
-<tr><td>🔍 Contextual Retrieval</td><td>上下文检索增强生成指南</td><td><a href="contextual-retrieval.html">阅读 →</a></td></tr>
-<tr><td>🛠️ Claude Agent SDK</td><td>使用 Claude Agent SDK 构建 Agents</td><td><a href="claude-agent-sdk.html">阅读 →</a></td></tr></table></article></main>
-<footer><p>📅 最后更新: 2026-02-07</p><p>Built with ❤️</p></footer>
+<header><h1>🚀 AI Agents 技术博客</h1><p>Anthropic 技术文章中文翻译与解读</p></header>
+<nav class="container">
+  <a href="index.html">🏠 首页</a>
+  <a href="#foundation">🏗️ 基础架构</a>
+  <a href="#tools">🛠️ 工具能力</a>
+  <a href="#context">📦 上下文工程</a>
+  <a href="#collaboration">🤝 长任务与协作</a>
+</nav>
+<main class="container">
+
+<!-- 统计信息 -->
+<div class="stats">
+  <div class="stat-item">
+    <div class="stat-number">10</div>
+    <div class="stat-label">技术文章</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number">4</div>
+    <div class="stat-label">分类主题</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number">2026</div>
+    <div class="stat-label">更新年份</div>
+  </div>
+</div>
+
+<article>
+
+<!-- 分类概览 -->
+<h2 style="text-align:center;margin-bottom:30px;">📚 文章分类</h2>
+<div class="category-overview">
+  <a href="#foundation" class="overview-card">
+    <div class="icon">🏗️</div>
+    <h3>基础架构</h3>
+    <p>2篇文章</p>
+  </a>
+  <a href="#tools" class="overview-card">
+    <div class="icon">🛠️</div>
+    <h3>工具能力</h3>
+    <p>3篇文章</p>
+  </a>
+  <a href="#context" class="overview-card">
+    <div class="icon">📦</div>
+    <h3>上下文工程</h3>
+    <p>2篇文章</p>
+  </a>
+  <a href="#collaboration" class="overview-card">
+    <div class="icon">🤝</div>
+    <h3>长任务与协作</h3>
+    <p>3篇文章</p>
+  </a>
+</div>
+
+<!-- 1. 基础架构 -->
+<div id="foundation" class="category-section">
+  <div class="category-header">
+    <span class="category-icon">🏗️</span>
+    <h2>一、基础架构</h2>
+  </div>
+  <p>构建有效AI Agents的基础架构模式，包括工作流类型、Agent设计原则和SDK使用指南。</p>
+  <div class="article-grid">
+    <div class="article-card">
+      <h3>🤖 构建有效的 AI Agents 指南</h3>
+      <p>Anthropic官方指南，介绍构建Agent系统的核心模式：工作流 vs Agents、何时使用框架、以及五大工作流类型。</p>
+      <div class="tags">
+        <span class="tag tag-blue">入门必读</span>
+        <span class="tag">Agent设计</span>
+      </div>
+      <a href="building-effective-agents.html" class="read-btn">阅读文章 →</a>
+    </div>
+    <div class="article-card">
+      <h3>🔧 使用 Claude Agent SDK 构建 Agents</h3>
+      <p>深入了解Claude Agent SDK的核心设计原则：给Agent一台电脑、Agent Loop模式、以及收集上下文、采取行动、验证工作的方法。</p>
+      <div class="tags">
+        <span class="tag tag-purple">SDK教程</span>
+        <span class="tag">最佳实践</span>
+      </div>
+      <a href="building-agents-with-claude-agent-sdk.html" class="read-btn">阅读文章 →</a>
+    </div>
+  </div>
+</div>
+
+<!-- 2. 工具能力 -->
+<div id="tools" class="category-section">
+  <div class="category-header">
+    <span class="category-icon">🛠️</span>
+    <h2>二、工具能力</h2>
+  </div>
+  <p>掌握Agent工具使用的进阶技能，从基础工具设计到高级工具编排，全面提升Agent执行能力。</p>
+  <div class="article-grid">
+    <div class="article-card">
+      <h3>🛠️ 高级工具使用</h3>
+      <p>Claude开发者平台高级功能：工具搜索工具（节省95%上下文）、程序化工具调用（减少37%Token）、工具使用示例（准确率90%）。</p>
+      <div class="tags">
+        <span class="tag tag-green">进阶功能</span>
+        <span class="tag">性能优化</span>
+      </div>
+      <a href="advanced-tool-use.html" class="read-btn">阅读文章 →</a>
+    </div>
+    <div class="article-card">
+      <h3>🧠 Claude Think Tool</h3>
+      <p>让Claude停下来思考的专用工具。在τ-Bench基准测试中，使用Think Tool+优化提示比Baseline提升54%性能。</p>
+      <div class="tags">
+        <span class="tag tag-orange">推理增强</span>
+        <span class="tag">τ-Bench</span>
+      </div>
+      <a href="claude-think-tool.html" class="read-btn">阅读文章 →</a>
+    </div>
+    <div class="article-card">
+      <h3>📝 为 AI Agents 编写有效工具</h3>
+      <p>工具设计原则：选择正确的工具、命名空间划分、返回有意义上下文、Token效率优化、以及提示工程化工具描述。</p>
+      <div class="tags">
+        <span class="tag tag-blue">工具设计</span>
+        <span class="tag">最佳实践</span>
+      </div>
+      <a href="writing-effective-tools-for-agents.html" class="read-btn">阅读文章 →</a>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 上下文工程 -->
+<div id="context" class="category-section">
+  <div class="category-header">
+    <span class="category-icon">📦</span>
+    <h2>三、上下文工程</h2>
+  </div>
+  <p>优化LLM上下文管理的核心技术，包括上下文检索和上下文工程策略，提升Agent理解能力和执行效率。</p>
+  <div class="article-grid">
+    <div class="article-card">
+      <h3>📦 有效上下文工程指南</h3>
+      <p>Anthropic官方指南：两种检索模式（检索 vs 重新排序）、四种嵌入策略、查询分类、以及六种上下文工程方法。</p>
+      <div class="tags">
+        <span class="tag tag-blue">官方指南</span>
+        <span class="tag">RAG</span>
+      </div>
+      <a href="effective-context-engineering.html" class="read-btn">阅读文章 →</a>
+    </div>
+    <div class="article-card">
+      <h3>🔍 上下文检索增强生成</h3>
+      <p>深入解析上下文检索技术：嵌入模型优化、查询分类、重新排序、以及冷启动问题的解决方案。</p>
+      <div class="tags">
+        <span class="tag tag-purple">检索技术</span>
+        <span class="tag">嵌入模型</span>
+      </div>
+      <a href="contextual-retrieval.html" class="read-btn">阅读文章 →</a>
+    </div>
+  </div>
+</div>
+
+<!-- 4. 长任务与协作 -->
+<div id="collaboration" class="category-section">
+  <div class="category-header">
+    <span class="category-icon">🤝</span>
+    <h2>四、长任务与协作</h2>
+  </div>
+  <p>处理长时间运行任务和多Agent协作的高级策略，包括Agent编排、测试评估和生产可靠性。</p>
+  <div class="article-grid">
+    <div class="article-card">
+      <h3>🔄 长期运行 Agents 的有效框架</h3>
+      <p>解决上下文窗口限制和会话状态管理的双代理架构：初始化Agent + 编码Agent，配合功能列表管理和端到端测试。</p>
+      <div class="tags">
+        <span class="tag tag-orange">长期任务</span>
+        <span class="tag">架构设计</span>
+      </div>
+      <a href="effective-harnesses-long-running-agents.html" class="read-btn">阅读文章 →</a>
+    </div>
+    <div class="article-card">
+      <h3>🤝 多代理研究系统</h3>
+      <p>Anthropic多代理系统深度解析：比单代理提升90.2%性能，编排器-工作者模式，以及提示工程最佳实践。</p>
+      <div class="tags">
+        <span class="tag tag-green">多代理</span>
+        <span class="tag">性能提升</span>
+      </div>
+      <a href="multi-agent-research-system.html" class="read-btn">阅读文章 →</a>
+    </div>
+  </div>
+</div>
+
+</article>
+
+</main>
+<footer><p>📅 最后更新: 2026-02-08</p><p>Built with ❤️ | 翻译：HinnBot</p></footer>
 </body>
 </html>
