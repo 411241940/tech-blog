@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Skills：让Agent适应真实世界 | 技术博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center}
+header h1{font-size:2.5em;margin-bottom:10px}
+header p{opacity:0.9}
+nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
+nav a{margin-right:25px;text-decoration:none;color:#667eea;font-weight:600}
+nav a:hover{color:#764ba2}
+article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+article h1{color:#667eea;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #667eea}
+article h2{color:#764ba2;margin:35px 0 15px}
+article h3{color:#444;margin:25px 0 10px}
+article p{margin:15px 0}
+article a{color:#667eea;text-decoration:none}
+article a:hover{text-decoration:underline}
+article code{background:#f4f4f4;padding:3px 8px;border-radius:4px;font-family:monospace}
+article pre{background:#2d3748;color:#f8f8f2;padding:20px;border-radius:8px;overflow-x:auto;margin:20px 0}
+article pre code{background:none;color:inherit;padding:0}
+article ul,article ol{margin:15px 0 15px 30px}
+article li{margin:8px 0}
+article blockquote{border-left:4px solid #667eea;padding:15px 20px;margin:20px 0;background:#f7f7fa;border-radius:0 8px 8px 0}
+article table{width:100%;border-collapse:collapse;margin:20px 0}
+article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
+article th{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+article tr:nth-child(even){background:#f7f7fa}
+article tr:hover{background:#edf2f7}
+.chart{background:#f8f9fa;padding:30px;margin:20px 0;border-radius:12px;text-align:center}
+.chart-row{display:flex;justify-content:center;align-items:center;gap:20px;margin:15px 0;flex-wrap:wrap}
+.chart-node{padding:15px 25px;border-radius:8px;font-weight:500;min-width:120px}
+.chart-arrow{font-size:24px;color:#667eea}
+.chart-subtitle{font-size:14px;color:#666;margin:10px 0;font-weight:bold}
+.flowchart{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px}
+.flow-row{display:flex;align-items:center;gap:15px;flex-wrap:wrap;justify-content:center}
+.flow-node{padding:12px 20px;border-radius:6px;font-size:14px}
+.flow-arrow{font-size:20px;color:#667eea;font-weight:bold}
+.card-container{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.card{background:white;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);min-width:150px}
+.card-title{font-weight:bold;margin-bottom:10px;color:#667eea}
+.card-content{font-size:14px;color:#666}
+.card-icon{font-size:30px;margin-bottom:10px}
+.comparison-box{display:flex;gap:20px;margin:20px 0}
+.comparison-item{flex:1;padding:20px;border-radius:10px}
+.comparison-item.good{background:#d4edda;border:2px solid #28a745}
+.comparison-item.bad{background:#f8d7da;border:2px solid #e1306c}
+.comparison-item.neutral{background:#e9ecef;border:2px solid #6c757d}
+.framework-card{background:white;border:2px solid #e9ecef;border-radius:10px;padding:15px;text-align:center;flex:1;min-width:180px}
+.framework-name{font-weight:bold;color:#667eea;margin-bottom:8px}
+.framework-desc{font-size:12px;color:#666}
+footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
+@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+.node-green{background:#28a745;color:white;border:2px solid #28a745}
+.node-blue{background:#007bff;color:white;border:2px solid #007bff}
+.node-purple{background:#6f42c1;color:white;border:2px solid #6f42c1}
+.node-yellow{background:#ffc107;color:#333;border:2px solid #ffc107}
+.node-red{background:#e1306c;color:white;border:2px solid #e1306c}
+.node-teal{background:#17a2b8;color:white;border:2px solid #17a2b8}
+.node-gray{background:#6c757d;color:white;border:2px solid #6c757d}
+</style>
+</head>
+<body>
+<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
+<nav class="container">
+  <div class="nav-wrapper">
+    <a href="index.html" class="nav-home">🏠 首页</a>
+    <div class="nav-dropdown">
+      <button class="nav-dropbtn">📚 文章分类 ▾</button>
+      <div class="nav-dropdown-content">
+        <div class="dropdown-section">
+          <h4>🏗️ 基础架构</h4>
+          <a href="building-effective-agents.html">构建有效的 AI Agents</a>
+          <a href="building-agents-with-claude-agent-sdk.html">使用 Claude Agent SDK</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>🛠️ 工具能力</h4>
+          <a href="advanced-tool-use.html">高级工具使用</a>
+          <a href="claude-think-tool.html">Claude Think Tool</a>
+          <a href="agent-skills.html">Agent Skills</a>
+          <a href="writing-effective-tools-for-agents.html">为 Agents 编写工具</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>📦 上下文工程</h4>
+          <a href="effective-context-engineering.html">有效上下文工程</a>
+          <a href="contextual-retrieval.html">上下文检索增强生成</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>🤝 长任务与协作</h4>
+          <a href="effective-harnesses-long-running-agents.html">长期运行 Agents</a>
+          <a href="multi-agent-research-system.html">多代理研究系统</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+<style>
+.nav-wrapper{display:flex;align-items:center;justify-content:center}
+.nav-dropdown{position:relative;display:inline-block}
+.nav-dropbtn{background:none;border:none;color:#667eea;font-size:15px;font-weight:600;padding:8px 16px;cursor:pointer;border-radius:6px;transition:background 0.3s}
+.nav-dropbtn:hover{background:#f0f0f0}
+.nav-dropdown-content{display:none;position:absolute;background:white;min-width:280px;box-shadow:0 8px 30px rgba(0,0,0,0.15);border-radius:10px;z-index:1000;padding:15px;left:50%;transform:translateX(-50%);top:100%;margin-top:5px}
+.nav-dropdown:hover .nav-dropdown-content{display:block}
+.dropdown-section{border-bottom:1px solid #eee;padding-bottom:10px;margin-bottom:10px}
+.dropdown-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.dropdown-section h4{color:#667eea;font-size:13px;margin:0 0 8px 0;padding-left:5px}
+.dropdown-section a{display:block;color:#333;font-size:14px;padding:6px 12px;border-radius:5px;text-decoration:none;margin:2px 0;transition:all 0.2s}
+.dropdown-section a:hover{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+.nav-home{color:#667eea;font-weight:600;text-decoration:none;padding:8px 16px;border-radius:6px;transition:background 0.3s}
+.nav-home:hover{background:#f0f0f0}
+</style>
+<main class="container"><article><h1>Agent Skills：让 Agent 适应真实世界</h1>
+
+<blockquote>作者：Barry Zhang, Keith Lazuka, Mahesh Murag (Anthropic)</blockquote>
+<blockquote>阅读时间：2026-02-08</blockquote>
+<blockquote>翻译：HinnBot</blockquote>
+
+<hr/>
+
+<blockquote style="background:#e3f2fd;border-left-color:#1976d2;">
+💡 <strong>更新</strong>：2025年12月18日，我们已将 <a href="https://agentskills.io/" target="_blank">Agent Skills</a> 作为开源标准发布，用于跨平台可移植性。
+</blockquote>
+
+<hr/>
+
+<h2>一、引言</h2>
+
+<p>随着模型能力的提高，我们现在可以构建与完整计算环境交互的通用Agent。例如，<a href="https://claude.com/product/claude-code" target="_blank">Claude Code</a> 可以使用本地代码执行和文件系统完成跨领域的复杂任务。</p>
+
+<p>但随着这些Agent变得越来越强大，我们需要更可组合、可扩展和可移植的方式来为它们配备领域特定的专业知识。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">Agent Skills 的核心价值</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">通用 Agent</div>
+            <span class="flow-arrow">+</span>
+            <div class="flow-node node-purple">Agent Skills</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">专业化 Agent</div>
+        </div>
+    </div>
+</div>
+
+<p>这促使我们创建了 <a href="https://www.anthropic.com/news/skills" target="_blank">Agent Skills</a>：组织化的文件夹，包含说明、脚本和资源，Agent可以动态发现和加载这些内容，以更好地执行特定任务。</p>
+
+<blockquote>
+💡 <strong>核心洞察</strong>：为Agent构建技能就像为新员工准备入职指南一样简单！
+</blockquote>
+
+<hr/>
+
+<h2>二、什么是 Agent Skill？</h2>
+
+<p>Skill是一个包含SKILL.md文件的目录，其中包含组织化的说明、脚本和资源，为Agent提供额外的能力。</p>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ Skill 的特点</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>可组合 - 像搭积木一样组合能力</li>
+            <li>可扩展 - 动态加载，按需使用</li>
+            <li>可移植 - 跨平台共享和复用</li>
+        </ul>
+    </div>
+    <div class="comparison-item neutral">
+        <strong>📦 组成内容</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>SKILL.md 主文件</li>
+            <li>辅助文档（reference.md等）</li>
+            <li>可执行脚本</li>
+        </ul>
+    </div>
+</div>
+
+<hr/>
+
+<h2>三、Skill 的结构</h2>
+
+<h3>3.1 基础结构</h3>
+
+<p>一个Skill就是一个包含SKILL.md文件的目录。该文件必须以YAML前置matter开头，包含必需的元数据：名称和描述。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">Skill 目录结构</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-purple">pdf-skill/</div>
+        </div>
+        <div style="margin-top:10px;">
+            <div class="flow-node node-blue">📄 SKILL.md</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">📄 reference.md</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-orange">📄 forms.md</div>
+        </div>
+    </div>
+</div>
+
+<h3>3.2 渐进式披露</h3>
+
+<p>渐进式披露是Agent Skills的核心设计原则：</p>
+
+<table>
+<tr><th>层级</th><th>内容</th><th>加载时机</th></tr>
+<tr><td><strong>第一层</strong></td><td>元数据（名称+描述）</td><td>启动时预加载</td></tr>
+<tr><td><strong>第二层</strong></td><td>SKILL.md 主体</td><td>Agent判断相关时加载</td></tr>
+<tr><td><strong>第三层+</strong></td><td>额外引用文件</td><td>按需导航发现</td></tr>
+</table>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 渐进式披露的优势</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>只加载必要信息到上下文</li>
+            <li>支持无限量的上下文打包</li>
+            <li>Agent按需发现和学习</li>
+        </ul>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>关键设计</strong>：Agent在处理特定任务时，不需要将整个Skill读入上下文窗口！
+</blockquote>
+
+<hr/>
+
+<h2>四、Skill 与上下文窗口</h2>
+
+<div class="chart">
+    <div class="chart-subtitle">上下文窗口变化流程</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">用户消息</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">触发 Skill</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">加载 SKILL.md</div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="flow-node node-orange">读取辅助文件</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-teal">执行任务</div>
+        </div>
+    </div>
+</div>
+
+<h3>触发流程</h3>
+
+<ol>
+<li>上下文窗口包含核心系统提示和每个已安装Skill的元数据</li>
+<li>Claude通过调用Bash工具读取pdf/SKILL.md的内容来触发PDF Skill</li>
+<li>Claude选择读取与Skill捆绑的forms.md文件</li>
+<li>最后，Claude从PDF Skill加载相关说明后继续用户任务</li>
+</ol>
+
+<hr/>
+
+<h2>五、Skill 与代码执行</h2>
+
+<p>Skill还可以包含Claude可以执行的代码作为工具。</p>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 为什么需要代码执行？</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li><strong>效率</strong>：通过token生成排序比运行排序算法昂贵得多</li>
+            <li><strong>确定性</strong>：许多应用程序需要只有代码才能提供的确定性可靠性</li>
+            <li><strong>一致性</strong>：代码工作流是一致的和可重复的</li>
+        </ul>
+    </div>
+</div>
+
+<h3>示例：PDF Skill</h3>
+
+<p>PDF Skill包含一个预写的Python脚本，可以读取PDF并提取所有表单字段。Claude可以运行此脚本，而无需将脚本或PDF加载到上下文中。</p>
+
+<pre><code># PDF表单提取示例
+import PyPDF2
+
+def extract_form_fields(pdf_path):
+    with open(pdf_path, 'rb') as file:
+        reader = PyPDF2.PdfReader(file)
+        # 提取表单字段逻辑...
+        return fields</code></pre>
+
+<blockquote>
+💡 <strong>优势</strong>：代码是确定性的，这个工作流是一致且可重复的！
+</blockquote>
+
+<hr/>
+
+<h2>六、开发与评估 Skill</h2>
+
+<h3>6.1 入门指南</h3>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">从评估开始</div>
+        <div class="card-content">通过在代表性任务上运行Agent来识别能力差距，然后增量构建Skills来弥补这些缺点</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">📐</div>
+        <div class="card-title">结构化扩展</div>
+        <div class="card-content">当SKILL.md变得笨重时，将其内容拆分为单独的文件并引用它们</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">👁️</div>
+        <div class="card-title">从Claude视角思考</div>
+        <div class="card-content">监控Claude在真实场景中如何使用你的Skill，并根据观察进行迭代</div>
+    </div>
+</div>
+
+<h3>6.2 最佳实践</h3>
+
+<table>
+<tr><th>实践</th><th>说明</th></tr>
+<tr><td><strong>分离互斥上下文</strong></td><td>如果某些上下文是互斥的或很少一起使用，保持路径分离将减少token使用</td></tr>
+<tr><td><strong>代码即文档</strong></td><tt>代码既可以作为可执行工具，也可以作为文档。应该明确Claude是直接运行脚本还是将它们读入上下文作为参考</td></tr>
+<tr><td><strong>关注名称和描述</strong></td><td>Claude在决定是否响应其当前任务触发Skill时会使用这些</td></tr>
+<tr><td><strong>与Claude迭代</strong></td><td>在完成任务时，要求Claude将其成功方法和常见错误捕捉到Skill中的可重用上下文和代码中</td></tr>
+</table>
+
+<h3>6.3 安全考虑</h3>
+
+<div class="comparison-box">
+    <div class="comparison-item bad">
+        <strong>⚠️ 风险</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>恶意Skill可能在环境中引入漏洞</li>
+            <li>可能指示Claude外泄数据或采取意外行动</li>
+        </ul>
+    </div>
+    <div class="comparison-item good">
+        <strong>✅ 建议</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>只从可信来源安装Skill</li>
+            <li>从不太可信的来源安装时，使用前彻底审核</li>
+            <li>特别注意代码依赖和捆绑资源</li>
+            <li>注意连接到可能不可信外部网络源的说明或代码</li>
+        </ul>
+    </div>
+</div>
+
+<hr/>
+
+<h2>七、Skill 的未来</h2>
+
+<div class="chart">
+    <div class="chart-subtitle">Agent Skills 支持的平台</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">Claude.ai</div>
+            <div class="flow-node node-purple">Claude Code</div>
+            <div class="flow-node node-green">Claude Agent SDK</div>
+            <div class="flow-node node-orange">Claude Developer Platform</div>
+        </div>
+    </div>
+</div>
+
+<h3>即将推出的功能</h3>
+
+<ul>
+<li>创建、编辑、发现、共享和使用Skills的完整生命周期支持</li>
+<li>帮助组织和个人与Claude共享其上下文和工作流程</li>
+<li>探索Skills如何补充 <a href="https://modelcontextprotocol.io/" target="_blank">MCP</a> 服务器</li>
+</ul>
+
+<blockquote>
+💡 <strong>愿景</strong>：我们希望实现Agent自主创建、编辑和评估Skills的能力，让它们将自己的行为模式编入可重用的能力中。
+</blockquote>
+
+<hr/>
+
+<h2>八、总结</h2>
+
+<div class="card-container">
+    <div class="card" style="flex:1;background:#28a745;color:white;border:none;">
+        <div class="card-title" style="color:white;">🎯 渐进式披露</div>
+        <div class="card-content" style="color:white;">三层结构设计，按需加载</div>
+    </div>
+    <div class="card" style="flex:1;background:#667eea;color:white;border:none;">
+        <div class="card-title" style="color:white;">📦 可组合能力</div>
+        <div class="card-content" style="color:white;">像搭积木一样组合Agent能力</div>
+    </div>
+    <div class="card" style="flex:1;background:#764ba2;color:white;border:none;">
+        <div class="card-title" style="color:white;">🔐 安全可控</div>
+        <div class="card-content" style="color:white;">开源标准，可信来源</div>
+    </div>
+</div>
+
+<p>Agent Skills是一个简单概念，具有相应简单的格式。这种简单性使组织、开发者和最终用户能够构建定制化的Agent并赋予它们新的能力。</p>
+
+<hr/>
+
+<h3>参考资源</h3>
+
+<ul>
+<li><a href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview" target="_blank">Agent Skills 官方文档</a></li>
+<li><a href="https://github.com/anthropics/claude-cookbooks/tree/main/skills" target="_blank">Agent Skills Cookbook</a></li>
+<li><a href="https://agentskills.io/" target="_blank">Agent Skills 开源标准</a></li>
+<li><a href="https://github.com/anthropics/skills/tree/main/document-skills/pdf" target="_blank">PDF Skill 示例</a></li>
+</ul>
+
+<hr/>
+
+<p><em>文档生成时间：2026-02-08</em></p>
+<p><em>原文链接：https://claude.com/blog/equipping-agents-for-the-real-world-with-agent-skills</em></p>
+</article></main>
+<footer><p>📅 最后更新: 2026-02-08</p><p>Built with ❤️ | 翻译：HinnBot</p></footer>
+</body>
+</html>
