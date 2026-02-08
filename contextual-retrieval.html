@@ -97,7 +97,37 @@ footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0
 </head>
 <body>
 <header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
-<nav class="container"><a href="index.html">🏠 首页</a><a href="building-effective-agents.html">🤖 Effective Agents</a><a href="effective-context-engineering.html">📦 Context Engineering</a><a href="contextual-retrieval.html">🔍 Contextual Retrieval</a></nav>
+<nav class="container">
+  <div class="nav-wrapper">
+    <a href="index.html" class="nav-home">🏠 首页</a>
+    <div class="nav-dropdown">
+      <button class="nav-dropbtn">📚 文章分类 ▾</button>
+      <div class="nav-dropdown-content">
+        <div class="dropdown-section">
+          <h4>🏗️ 基础架构</h4>
+          <a href="building-effective-agents.html">构建有效的 AI Agents</a>
+          <a href="building-agents-with-claude-agent-sdk.html">使用 Claude Agent SDK</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>🛠️ 工具能力</h4>
+          <a href="advanced-tool-use.html">高级工具使用</a>
+          <a href="claude-think-tool.html">Claude Think Tool</a>
+          <a href="writing-effective-tools-for-agents.html">为 Agents 编写工具</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>📦 上下文工程</h4>
+          <a href="effective-context-engineering.html">有效上下文工程</a>
+          <a href="contextual-retrieval.html">上下文检索增强生成</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>🤝 长任务与协作</h4>
+          <a href="effective-harnesses-long-running-agents.html">长期运行 Agents</a>
+          <a href="multi-agent-research-system.html">多代理研究系统</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
 <main class="container"><article><h1>上下文检索增强生成指南</h1>
 
 <blockquote>作者：Anthropic Applied AI Team (Daniel Ford, Orowa Sikder, Gautam Mittal, Kenneth Lien)</blockquote>
