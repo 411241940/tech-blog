@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agents 评估指南 | 技术博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center}
+header h1{font-size:2.5em;margin-bottom:10px}
+header p{opacity:0.9}
+nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
+nav a{margin-right:25px;text-decoration:none;color:#667eea;font-weight:600}
+nav a:hover{color:#764ba2}
+article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+article h1{color:#667eea;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #667eea}
+article h2{color:#764ba2;margin:35px 0 15px}
+article h3{color:#444;margin:25px 0 10px}
+article p{margin:15px 0}
+article a{color:#667eea;text-decoration:none}
+article a:hover{text-decoration:underline}
+article code{background:#f4f4f4;padding:3px 8px;border-radius:4px;font-family:monospace}
+article pre{background:#2d3748;color:#f8f8f2;padding:20px;border-radius:8px;overflow-x:auto;margin:20px 0}
+article pre code{background:none;color:inherit;padding:0}
+article ul,article ol{margin:15px 0 15px 30px}
+article li{margin:8px 0}
+article blockquote{border-left:4px solid #667eea;padding:15px 20px;margin:20px 0;background:#f7f7fa;border-radius:0 8px 8px 0}
+article table{width:100%;border-collapse:collapse;margin:20px 0}
+article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
+article th{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+article tr:nth-child(even){background:#f7f7fa}
+article tr:hover{background:#edf2f7}
+.chart{background:#f8f9fa;padding:30px;margin:20px 0;border-radius:12px;text-align:center}
+.chart-row{display:flex;justify-content:center;align-items:center;gap:20px;margin:15px 0;flex-wrap:wrap}
+.chart-node{padding:15px 25px;border-radius:8px;font-weight:500;min-width:120px}
+.chart-arrow{font-size:24px;color:#667eea}
+.chart-subtitle{font-size:14px;color:#666;margin:10px 0;font-weight:bold}
+.flowchart{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px}
+.flow-row{display:flex;align-items:center;gap:15px;flex-wrap:wrap;justify-content:center}
+.flow-node{padding:12px 20px;border-radius:6px;font-size:14px}
+.flow-arrow{font-size:20px;color:#667eea;font-weight:bold}
+.card-container{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.card{background:white;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);min-width:150px}
+.card-title{font-weight:bold;margin-bottom:10px;color:#667eea}
+.card-content{font-size:14px;color:#666}
+.card-icon{font-size:30px;margin-bottom:10px}
+.comparison-box{display:flex;gap:20px;margin:20px 0}
+.comparison-item{flex:1;padding:20px;border-radius:10px}
+.comparison-item.good{background:#d4edda;border:2px solid #28a745}
+.comparison-item.bad{background:#f8d7da;border:2px solid #e1306c}
+.comparison-item.neutral{background:#e9ecef;border:2px solid #6c757d}
+.framework-card{background:white;border:2px solid #e9ecef;border-radius:10px;padding:15px;text-align:center;flex:1;min-width:180px}
+.framework-name{font-weight:bold;color:#667eea;margin-bottom:8px}
+.framework-desc{font-size:12px;color:#666}
+footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
+@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+.node-green{background:#28a745;color:white;border:2px solid #28a745}
+.node-blue{background:#007bff;color:white;border:2px solid #007bff}
+.node-purple{background:#6f42c1;color:white;border:2px solid #6f42c1}
+.node-yellow{background:#ffc107;color:#333;border:2px solid #ffc107}
+.node-red{background:#e1306c;color:white;border:2px solid #e1306c}
+.node-teal{background:#17a2b8;color:white;border:2px solid #17a2b8}
+.node-gray{background:#6c757d;color:white;border:2px solid #6c757d}
+</style>
+</head>
+<body>
+<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
+<nav class="container">
+  <div class="nav-wrapper">
+    <a href="index.html" class="nav-home">🏠 首页</a>
+    <div class="nav-dropdown">
+      <button class="nav-dropbtn">📚 文章分类 ▾</button>
+      <div class="nav-dropdown-content">
+        <div class="dropdown-section">
+          <h4>🏗️ 基础架构</h4>
+          <a href="building-effective-agents.html">构建有效的 AI Agents</a>
+          <a href="building-agents-with-claude-agent-sdk.html">使用 Claude Agent SDK</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>🛠️ 工具能力</h4>
+          <a href="advanced-tool-use.html">高级工具使用</a>
+          <a href="agent-skills.html">Agent Skills</a>
+          <a href="claude-think-tool.html">Claude Think Tool</a>
+          <a href="writing-effective-tools-for-agents.html">为 Agents 编写工具</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>📦 上下文工程</h4>
+          <a href="effective-context-engineering.html">有效上下文工程</a>
+          <a href="contextual-retrieval.html">上下文检索增强生成</a>
+          <a href="code-execution-with-mcp.html">MCP 代码执行</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>🤝 长任务与协作</h4>
+          <a href="effective-harnesses-long-running-agents.html">长期运行 Agents</a>
+          <a href="multi-agent-research-system.html">多代理研究系统</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>📊 生产评估</h4>
+          <a href="agent-evals-guide.html">AI Agents 评估指南</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+<style>
+.nav-wrapper{display:flex;align-items:center;justify-content:center}
+.nav-dropdown{position:relative;display:inline-block}
+.nav-dropbtn{background:none;border:none;color:#667eea;font-size:15px;font-weight:600;padding:8px 16px;cursor:pointer;border-radius:6px;transition:background 0.3s}
+.nav-dropbtn:hover{background:#f0f0f0}
+.nav-dropdown-content{display:none;position:absolute;background:white;min-width:280px;box-shadow:0 8px 30px rgba(0,0,0,0.15);border-radius:10px;z-index:1000;padding:15px;left:50%;transform:translateX(-50%);top:100%;margin-top:5px}
+.nav-dropdown:hover .nav-dropdown-content{display:block}
+.dropdown-section{border-bottom:1px solid #eee;padding-bottom:10px;margin-bottom:10px}
+.dropdown-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.dropdown-section h4{color:#667eea;font-size:13px;margin:0 0 8px 0;padding-left:5px}
+.dropdown-section a{display:block;color:#333;font-size:14px;padding:6px 12px;border-radius:5px;text-decoration:none;margin:2px 0;transition:all 0.2s}
+.dropdown-section a:hover{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+.nav-home{color:#667eea;font-weight:600;text-decoration:none;padding:8px 16px;border-radius:6px;transition:background 0.3s}
+.nav-home:hover{background:#f0f0f0}
+</style>
+<main class="container"><article><h1>AI Agents 评估指南</h1>
+
+<blockquote>作者：Mikaela Grace, Jeremy Hadfield, Rodrigo Olivares, Jiri De Jonghe (Anthropic)</blockquote>
+<blockquote>阅读时间：2026-02-08</blockquote>
+<blockquote>翻译：HinnBot</blockquote>
+
+<hr/>
+
+<h2>一、引言</h2>
+
+<p>好的评估帮助团队更有信心地发布AI Agent。没有评估，很容易陷入被动循环——只在生产环境中发现问题，修复一个故障又产生另一个。评估使问题和行为变化在影响用户之前变得可见，其价值在Agent的整个生命周期中会累积。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">评估的核心价值</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">发现问题</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">行为变化可见</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">价值累积</div>
+        </div>
+    </div>
+</div>
+
+<p>正如我们在<a href="building-effective-agents.html">构建有效的 AI Agents</a>中所述，Agent在多个轮次中运行：调用工具、修改状态、根据中间结果进行适应。使得AI Agent有用的相同能力——自主性、智能和灵活性——也使它们更难评估。</p>
+
+<blockquote>
+💡 <strong>核心洞察</strong>：评估使问题在影响用户之前变得可见，其价值会随时间累积！
+</blockquote>
+
+<hr/>
+
+<h2>二、评估的结构</h2>
+
+<p>评估（"eval"）是对AI系统的测试：给AI一个输入，然后应用评分逻辑到其输出以衡量成功。本文重点关注可在开发过程中运行而无需真实用户的自动评估。</p>
+
+<h3>关键概念</h3>
+
+<table>
+<tr><th>概念</th><th>定义</th></tr>
+<tr><td><strong>任务（Task）</strong></td><td>具有定义输入和成功标准的单个测试</td></tr>
+<tr><td><strong>尝试（Trial）</strong></td><td>每次任务的尝试，可运行多次以获得更一致的结果</td></tr>
+<tr><td><strong>评分器（Grader）</strong></td><td>对Agent性能某些方面进行评分的逻辑</td></tr>
+<tr><td><strong>记录（Transcript）</strong></td><td>完整记录，包括输出、工具调用、推理、中间结果</td></tr>
+<tr><td><strong>结果（Outcome）</strong></td><td>试验结束时环境中的最终状态</td></tr>
+<tr><td><strong>评估框架（Eval Harness）</strong></td><td>端到端运行评估的基础设施</td></tr>
+<tr><td><strong>评估套件（Eval Suite）</strong></td><td>旨在衡量特定能力或行为的任务集合</td></tr>
+</table>
+
+<blockquote>
+💡 <strong>关键区别</strong>：Agent说"您的航班已预订"是记录，而环境中SQL数据库中是否存在预订才是结果。
+</blockquote>
+
+<hr/>
+
+<h2>三、为什么需要构建评估</h2>
+
+<p>当团队第一次开始构建Agent时，他们可以通过手动测试、dogfooding（吃自己的狗粮）和直觉取得令人惊讶的进展。更严格的评估甚至可能看起来像是减慢发布的开销。但在早期原型阶段之后，一旦Agent进入生产环境并开始扩展，不构建评估就会开始崩溃。</p>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 评估的价值</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>使问题在影响用户之前可见</li>
+            <li>防止回归并捕捉回归</li>
+            <li>将"Agent感觉更差了"转化为可操作的内容</li>
+            <li>加速开发而不是减慢</li>
+        </ul>
+    </div>
+    <div class="comparison-item bad">
+        <strong>❌ 没有评估的问题</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>用户报告问题后只能被动修复</li>
+            <li>无法区分真正的回归和噪声</li>
+            <li>无法在发布前自动测试数百种场景</li>
+            <li>无法衡量改进</li>
+        </ul>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>经验</strong>：Claude Code从快速迭代开始，后来添加了评估——首先针对简洁性和文件编辑等狭窄领域，然后针对过度工程化等更复杂的行为。
+</blockquote>
+
+<hr/>
+
+<h2>四、如何评估 AI Agents</h2>
+
+<p>我们看到当今部署的几种常见类型的Agent，包括编码Agent、研究Agent、计算机使用Agent和对话Agent。每种类型可能部署在各种行业中，但可以使用类似的技术进行评估。</p>
+
+<h3>4.1 评分器类型</h3>
+
+<h4>代码评分器</h4>
+<table>
+<tr><th>方法</th><th>优势</th><th>劣势</th></tr>
+<tr><td>字符串匹配检查</td><td>快速、便宜、客观</td><td>对有效变化不够灵活</td></tr>
+<tr><td>静态分析</td><td>易于调试</td><td>缺乏细微差别</td></tr>
+<tr><td>结果验证</td><td>验证特定条件</td><td>有限的评估主观任务</td></tr>
+</table>
+
+<h4>模型评分器</h4>
+<table>
+<tr><th>方法</th><th>优势</th><th>劣势</th></tr>
+<tr><td>基于规则的评分</td><td>灵活、可扩展</td><td>非确定性的</td></tr>
+<tr><td>自然语言断言</td><td>捕捉细微差别</td><td>比代码更昂贵</td></tr>
+<tr><td>成对比较</td><td>处理开放式任务</td><td>需要与人工评分者校准</td></tr>
+</table>
+
+<h4>人工评分器</h4>
+<table>
+<tr><th>方法</th><th>优势</th><th>劣势</th></tr>
+<tr><td> SME审查</td><td>黄金标准质量</td><td>昂贵</td></tr>
+<tr><td>众包判断</td><td>匹配专家用户判断</td><td>慢</td></tr>
+<tr><td>A/B测试</td><td>系统性</td><td>需要足够的流量</td></tr>
+</table>
+
+<h3>4.2 能力评估 vs 回归评估</h3>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 能力评估</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>问题："这个Agent能做什么？"</li>
+            <li>应该从低通过率开始</li>
+            <li>针对Agent挣扎的任务</li>
+            <li>给团队一个要攀登的山峰</li>
+        </ul>
+    </div>
+    <div class="comparison-item neutral">
+        <strong>🔄 回归评估</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>问题："Agent还能处理所有它曾经能处理的任务吗？"</li>
+            <li>应该有接近100%的通过率</li>
+            <li>防止退步</li>
+            <li>确保更改不会在其他地方引起问题</li>
+        </ul>
+    </div>
+</div>
+
+<h3>4.3 评估编码Agent</h3>
+
+<p>编码Agent编写、测试和调试代码，导航代码库并运行命令，就像人类开发人员一样。现代编码Agent的有效评估通常依赖于明确定义的任务、稳定的测试环境和生成代码的彻底测试。</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-title">📊 SWE-bench Verified</div>
+        <div class="card-content">给Agent来自流行Python仓库的GitHub问题，通过运行测试套件评分</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-title">💻 Terminal-Bench</div>
+        <div class="card-content">端到端技术任务，如从源代码构建Linux内核</div>
+    </div>
+</div>
+
+<h3>4.4 评估对话Agent</h3>
+
+<p>对话Agent在支持、销售或辅导等领域与用户交互。与传统聊天机器人不同，它们保持状态、使用工具并在对话中采取行动。对话Agent的成功可以是多维的：</p>
+
+<ul>
+<li>工单是否解决？</li>
+<li>是否在<10轮内完成？</li>
+<li>语气是否合适？</li>
+</ul>
+
+<h3>4.5 评估研究Agent</h3>
+
+<p>研究Agent收集、综合和分析信息，然后产生输出如答案或报告。研究Agent评估面临独特挑战：</p>
+
+<ul>
+<li>专家可能对综合是否全面意见不一致</li>
+<li>基础事实随着参考内容的变化而变化</li>
+<li>更长、更开放的输出为错误创造了更多空间</li>
+</ul>
+
+<h3>4.6 非确定性思考</h3>
+
+<p>两种指标帮助捕捉这种细微差别：</p>
+
+<table>
+<tr><th>指标</th><th>定义</th><th>适用场景</th></tr>
+<tr><td><strong>pass@k</strong></td><td>Agent在k次尝试中至少获得一次正确答案的概率</td><td>只要一次成功就重要的工具</td></tr>
+<tr><td><strong>pass^k</strong></td><td>所有k次尝试都成功的概率</td><td>用户期望每次都可靠行为的面向用户的Agent</td></tr>
+</table>
+
+<blockquote>
+💡 <strong>关键区别</strong>：pass@k关注至少一次成功，pass^k要求所有试验都成功。
+</blockquote>
+
+<hr/>
+
+<h2>五、从零到一：评估路线图</h2>
+
+<h3>5.1 收集初始评估数据集的任务</h3>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">步骤0：尽早开始</div>
+        <div class="card-content">20-50个来自真实失败的简单任务是很好的起点</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">🔧</div>
+        <div class="card-title">步骤1：从手动测试开始</div>
+        <div class="card-content">从发布前运行的手动检查开始</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">📝</div>
+        <div class="card-title">步骤2：编写明确的任务</div>
+        <div class="card-content">两个领域专家会独立得出相同的通过/失败结论</div>
+    </div>
+</div>
+
+<h3>5.2 设计评估框架和评分器</h3>
+
+<h4>关键建议</h4>
+
+<ul>
+<li>评估中的Agent功能应该与生产中使用的Agent大致相同</li>
+<li>每个试验应该从干净的环境开始"隔离"</li>
+<li>尽可能选择确定性评分器</li>
+<li>对于具有多个组件的任务，建立部分信用</li>
+<li>仔细迭代以验证模型评分准确</li>
+</ul>
+
+<blockquote>
+💡 <strong>重要发现</strong>：在Terminal-Bench审计中，我们发现如果任务没有指定文件路径，Agent可能因为自己的错误而失败。评分者检查的一切都应该从任务描述中清晰可见。
+</blockquote>
+
+<h3>5.3 长期维护和使用评估</h3>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-icon">📖</div>
+        <div class="card-title">步骤6：检查记录</div>
+        <div class="card-content">阅读许多试验的记录以了解评分器是否工作良好</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">📈</div>
+        <div class="card-title">步骤7：监控饱和</div>
+        <div class="card-content">评估在100%时跟踪回归但不提供改进信号</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">🛠️</div>
+        <div class="card-title">步骤8：保持健康</div>
+        <div class="card-content">通过开放贡献和维护保持评估套件长期健康</div>
+    </div>
+</div>
+
+<hr/>
+
+<h2>六、评估与其他方法的结合</h2>
+
+<table>
+<tr><th>方法</th><th>优势</th><th>劣势</th></tr>
+<tr><td><strong>自动评估</strong></td><td>更快、完全可重现、无用户影响</td><td>需要更多前期投资</td></tr>
+<tr><td><strong>生产监控</strong></td><td>揭示真实用户行为</td><td>被动；问题到达用户</td></tr>
+<tr><td><strong>A/B测试</strong></td><td>衡量实际用户结果</td><td>慢；需要足够流量</td></tr>
+<tr><td><strong>用户反馈</strong></td><td>揭示未预料到的问题</td><td>稀疏且自选</td></tr>
+<tr><td><strong>人工审查</strong></td><td>建立对失败模式的直觉</td><td>耗时、不扩展</td></tr>
+</table>
+
+<blockquote>
+💡 <strong>最佳实践</strong>：最有效的团队结合这些方法：自动评估用于快速迭代，生产监控用于真实情况，定期人工审查用于校准。
+</blockquote>
+
+<hr/>
+
+<h2>七、评估框架推荐</h2>
+
+<div class="card-container">
+    <div class="framework-card">
+        <div class="framework-name">Harbor</div>
+        <div class="framework-desc">在容器化环境中运行Agent，用于大规模试验</div>
+    </div>
+    <div class="framework-card">
+        <div class="framework-name">Promptfoo</div>
+        <div class="framework-desc">轻量级、灵活的开源框架，用于提示测试</div>
+    </div>
+    <div class="framework-card">
+        <div class="framework-name">Braintrust</div>
+        <div class="framework-desc">结合离线评估与生产可观察性</div>
+    </div>
+    <div class="framework-card">
+        <div class="framework-name">LangSmith</div>
+        <div class="framework-desc">跟踪、离线评估和数据集管理</div>
+    </div>
+</div>
+
+<hr/>
+
+<h2>八、总结</h2>
+
+<div class="card-container">
+    <div class="card" style="flex:1;background:#28a745;color:white;border:none;">
+        <div class="card-title" style="color:white;">🎯 尽早开始</div>
+        <div class="card-content" style="color:white;">不要等待完美的套件</div>
+    </div>
+    <div class="card" style="flex:1;background:#667eea;color:white;border:none;">
+        <div class="card-title" style="color:white;">📝 明确标准</div>
+        <div class="card-content" style="color:white;">定义清晰、稳健的成功标准</div>
+    </div>
+    <div class="card" style="flex:1;background:#764ba2;color:white;border:none;">
+        <div class="card-title" style="color:white;">🔄 组合方法</div>
+        <div class="card-content" style="color:white;">结合多种评分器和评估类型</div>
+    </div>
+</div>
+
+<p>没有评估的团队陷入被动循环——修复一个故障，产生另一个，无法区分真正的回归和噪声。尽早投资的团队发现相反：开发加速，因为故障变成测试用例，测试用例防止回归，指标取代猜测。</p>
+
+<blockquote>
+💡 <strong>最终建议</strong>：AI Agent评估仍是一个新兴、快速发展的领域。随着Agent承担更长的任务、在多Agent系统中协作，我们需要适应我们的技术。
+</blockquote>
+
+<hr/>
+
+<h3>参考资源</h3>
+
+<ul>
+<li><a href="https://github.com/sierra-research/tau2-bench" target="_blank">τ2-Bench</a></li>
+<li><a href="https://www.swebench.com/SWE-bench/" target="_blank">SWE-bench Verified</a></li>
+<li><a href="https://www.tbench.ai/" target="_blank">Terminal-Bench</a></li>
+<li><a href="http://arxiv.org/abs/2504.12516" target="_blank">BrowseComp</a></li>
+<li><a href="https://harborframework.com/" target="_blank">Harbor</a></li>
+<li><a href="https://www.promptfoo.dev/" target="_blank">Promptfoo</a></li>
+<li><a href="https://www.braintrust.dev/" target="_blank">Braintrust</a></li>
+</ul>
+
+<hr/>
+
+<p><em>文档生成时间：2026-02-08</em></p>
+<p><em>原文链接：https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents</em></p>
+</article></main>
+<footer><p>📅 最后更新: 2026-02-08</p><p>Built with ❤️ | 翻译：HinnBot</p></footer>
+</body>
+</html>
