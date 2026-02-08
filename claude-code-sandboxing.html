@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 沙箱安全实践 | 技术博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#333;background:#f8f9fa}
+.container{max-width:900px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center}
+header h1{font-size:2.5em;margin-bottom:10px}
+header p{opacity:0.9}
+nav{background:white;padding:15px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100}
+nav a{margin-right:25px;text-decoration:none;color:#667eea;font-weight:600}
+nav a:hover{color:#764ba2}
+article{background:white;margin:30px 0;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+article h1{color:#667eea;margin-bottom:25px;padding-bottom:15px;border-bottom:3px solid #667eea}
+article h2{color:#764ba2;margin:35px 0 15px}
+article h3{color:#444;margin:25px 0 10px}
+article p{margin:15px 0}
+article a{color:#667eea;text-decoration:none}
+article a:hover{text-decoration:underline}
+article code{background:#f4f4f4;padding:3px 8px;border-radius:4px;font-family:monospace}
+article pre{background:#2d3748;color:#f8f8f2;padding:20px;border-radius:8px;overflow-x:auto;margin:20px 0}
+article pre code{background:none;color:inherit;padding:0}
+article ul,article ol{margin:15px 0 15px 30px}
+article li{margin:8px 0}
+article blockquote{border-left:4px solid #667eea;padding:15px 20px;margin:20px 0;background:#f7f7fa;border-radius:0 8px 8px 0}
+article table{width:100%;border-collapse:collapse;margin:20px 0}
+article th,article td{border:1px solid #e2e8f0;padding:12px;text-align:left}
+article th{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+article tr:nth-child(even){background:#f7f7fa}
+article tr:hover{background:#edf2f7}
+.chart{background:#f8f9fa;padding:30px;margin:20px 0;border-radius:12px;text-align:center}
+.chart-row{display:flex;justify-content:center;align-items:center;gap:20px;margin:15px 0;flex-wrap:wrap}
+.chart-node{padding:15px 25px;border-radius:8px;font-weight:500;min-width:120px}
+.chart-arrow{font-size:24px;color:#667eea}
+.chart-subtitle{font-size:14px;color:#666;margin:10px 0;font-weight:bold}
+.flowchart{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px}
+.flow-row{display:flex;align-items:center;gap:15px;flex-wrap:wrap;justify-content:center}
+.flow-node{padding:12px 20px;border-radius:6px;font-size:14px}
+.flow-arrow{font-size:20px;color:#667eea;font-weight:bold}
+.card-container{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.card{background:white;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);min-width:150px}
+.card-title{font-weight:bold;margin-bottom:10px;color:#667eea}
+.card-content{font-size:14px;color:#666}
+.card-icon{font-size:30px;margin-bottom:10px}
+.comparison-box{display:flex;gap:20px;margin:20px 0}
+.comparison-item{flex:1;padding:20px;border-radius:10px}
+.comparison-item.good{background:#d4edda;border:2px solid #28a745}
+.comparison-item.bad{background:#f8d7da;border:2px solid #e1306c}
+.comparison-item.neutral{background:#e9ecef;border:2px solid #6c757d}
+.framework-card{background:white;border:2px solid #e9ecef;border-radius:10px;padding:15px;text-align:center;flex:1;min-width:180px}
+.framework-name{font-weight:bold;color:#667eea;margin-bottom:8px}
+.framework-desc{font-size:12px;color:#666}
+footer{text-align:center;padding:40px;color:#718096;border-top:1px solid #e2e8f0;margin-top:40px}
+@media(max-width:768px){.container{padding:10px}article{padding:20px}header{padding:40px 20px}nav a{display:block;margin:10px 0}}
+.node-green{background:#28a745;color:white;border:2px solid #28a745}
+.node-blue{background:#007bff;color:white;border:2px solid #007bff}
+.node-purple{background:#6f42c1;color:white;border:2px solid #6f42c1}
+.node-yellow{background:#ffc107;color:#333;border:2px solid #ffc107}
+.node-red{background:#e1306c;color:white;border:2px solid #e1306c}
+.node-teal{background:#17a2b8;color:white;border:2px solid #17a2b8}
+.node-gray{background:#6c757d;color:white;border:2px solid #6c757d}
+</style>
+</head>
+<body>
+<header><h1>🚀 个人技术博客</h1><p>AI Agents 实践与探索</p></header>
+<nav class="container">
+  <div class="nav-wrapper">
+    <a href="index.html" class="nav-home">🏠 首页</a>
+    <div class="nav-dropdown">
+      <button class="nav-dropbtn">📚 文章分类 ▾</button>
+      <div class="nav-dropdown-content">
+        <div class="dropdown-section">
+          <h4>🏗️ 基础架构</h4>
+          <a href="building-effective-agents.html">构建有效的 AI Agents</a>
+          <a href="building-agents-with-claude-agent-sdk.html">使用 Claude Agent SDK</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>🛠️ 工具能力</h4>
+          <a href="advanced-tool-use.html">高级工具使用</a>
+          <a href="agent-skills.html">Agent Skills</a>
+          <a href="claude-think-tool.html">Claude Think Tool</a>
+          <a href="writing-effective-tools-for-agents.html">为 Agents 编写工具</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>📦 上下文工程</h4>
+          <a href="effective-context-engineering.html">有效上下文工程</a>
+          <a href="contextual-retrieval.html">上下文检索增强生成</a>
+          <a href="code-execution-with-mcp.html">MCP 代码执行</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>🤝 长任务与协作</h4>
+          <a href="effective-harnesses-long-running-agents.html">长期运行 Agents</a>
+          <a href="multi-agent-research-system.html">多代理研究系统</a>
+        </div>
+        <div class="dropdown-section">
+          <h4>📊 生产评估</h4>
+          <a href="agent-evals-guide.html">AI Agents 评估指南</a>
+          <a href="claude-code-best-practices.html">Claude Code 最佳实践</a>
+          <a href="claude-code-sandboxing.html">Claude Code 沙箱安全</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+<style>
+.nav-wrapper{display:flex;align-items:center;justify-content:center}
+.nav-dropdown{position:relative;display:inline-block}
+.nav-dropbtn{background:none;border:none;color:#667eea;font-size:15px;font-weight:600;padding:8px 16px;cursor:pointer;border-radius:6px;transition:background 0.3s}
+.nav-dropbtn:hover{background:#f0f0f0}
+.nav-dropdown-content{display:none;position:absolute;background:white;min-width:280px;box-shadow:0 8px 30px rgba(0,0,0,0.15);border-radius:10px;z-index:1000;padding:15px;left:50%;transform:translateX(-50%);top:100%;margin-top:5px}
+.nav-dropdown:hover .nav-dropdown-content{display:block}
+.dropdown-section{border-bottom:1px solid #eee;padding-bottom:10px;margin-bottom:10px}
+.dropdown-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.dropdown-section h4{color:#667eea;font-size:13px;margin:0 0 8px 0;padding-left:5px}
+.dropdown-section a{display:block;color:#333;font-size:14px;padding:6px 12px;border-radius:5px;text-decoration:none;margin:2px 0;transition:all 0.2s}
+.dropdown-section a:hover{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+.nav-home{color:#667eea;font-weight:600;text-decoration:none;padding:8px 16px;border-radius:6px;transition:background 0.3s}
+.nav-home:hover{background:#f0f0f0}
+</style>
+<main class="container"><article><h1>Claude Code 沙箱安全实践</h1>
+
+<blockquote>作者：David Dworken, Oliver Weller-Davies (Anthropic)</blockquote>
+<blockquote>贡献：Meaghan Choi, Catherine Wu, Molly Vorwerck, Alex Issten, Kier Bradwell, Kevin Garcia</blockquote>
+<blockquote>翻译：HinnBot</blockquote>
+<blockquote>整理时间：2026-02-08</blockquote>
+
+<hr/>
+
+<h2>一、引言</h2>
+
+<p>在 <a href="claude-code-best-practices.html">Claude Code</a> 中，Claude 与你一起编写、测试和调试代码，导航代码库、编辑多个文件并运行命令来验证其工作。然而，给予 Claude 对代码库和文件的这么多访问权限可能会引入风险，尤其是在提示注入（prompt injection）的情况下。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">沙箱化的核心价值</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">安全隔离</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">减少权限提示</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">更高自主性</div>
+        </div>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>关键数据</strong>：在内部使用中，我们发现沙箱化安全地减少了 84% 的权限提示！
+</blockquote>
+
+<hr/>
+
+<h2>二、Claude Code 的安全模型</h2>
+
+<h3>2.1 基于权限的模型</h3>
+
+<p>Claude Code 运行在基于权限的模型上：默认情况下，它是只读的，这意味着它在进行修改或运行任何命令之前需要获得权限。</p>
+
+<div class="comparison-box">
+    <div class="comparison-item good">
+        <strong>✅ 默认安全</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>只读模式保护代码库</li>
+            <li>自动允许安全命令（echo, cat）</li>
+            <li>其他操作需要明确批准</li>
+        </ul>
+    </div>
+    <div class="comparison-item bad">
+        <strong>⚠️ 疲劳风险</strong>
+        <ul style="text-align:left;margin-top:10px;">
+            <li>频繁点击"批准"降低效率</li>
+            <li>可能导致"批准疲劳"</li>
+            <li>用户可能不再仔细审查请求</li>
+        </ul>
+    </div>
+</div>
+
+<h3>2.2 沙箱化的必要性</h3>
+
+<p>沙箱化通过定义 Claude 可以自由工作的预设边界来解决这些问题，同时提供更安全的地方让开发者工作，并允许 Claude 更自主地运行，权限提示更少。</p>
+
+<blockquote>
+💡 <strong>核心洞察</strong>：通过设置明确的边界，沙箱化同时提高了安全性和自主性！
+</blockquote>
+
+<hr/>
+
+<h2>三、沙箱化架构</h2>
+
+<h3>3.1 双层隔离机制</h3>
+
+<p>我们的沙箱化方法建立在操作系统级功能之上，实现两层边界：</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-icon">📁</div>
+        <div class="card-title">文件系统隔离</div>
+        <div class="card-content">确保 Claude 只能访问或修改特定目录，防止提示注入修改敏感系统文件</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">🌐</div>
+        <div class="card-title">网络隔离</div>
+        <div class="card-content">确保 Claude 只能连接到批准的服务器，防止泄露敏感信息或下载恶意软件</div>
+    </div>
+</div>
+
+<h3>3.2 为什么需要双重隔离</h3>
+
+<table>
+<tr><th>隔离类型</th><th>单独使用的风险</th><th>双重隔离的保护</th></tr>
+<tr><td><strong>仅文件系统隔离</strong></td><td>被入侵的 Agent 可以通过网络泄露敏感文件（如 SSH 密钥）</td><td rowspan="2">提供更安全、更快速的智能体体验</td></tr>
+<tr><td><strong>仅网络隔离</strong></td><td>被入侵的 Agent 容易逃逸沙箱并获得网络访问权限</td></tr>
+</table>
+
+<blockquote>
+💡 <strong>安全原则</strong>：只有同时使用两种技术，才能为 Claude Code 用户提供更安全、更高效的智能体体验。
+</blockquote>
+
+<hr/>
+
+<h2>四、两大沙箱化新特性</h2>
+
+<h3>4.1 沙箱化 Bash 工具</h3>
+
+<h4>无需权限提示的安全 Bash 执行</h4>
+
+<p>我们引入了一个新的沙箱运行时（测试版研究预览），让你精确定义代理可以访问哪些目录和网络主机，无需启动和管理容器的开销。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">沙箱化 Bash 工作流程</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">用户定义边界</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">Bubblewrap/Seatbelt</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">安全执行</div>
+        </div>
+    </div>
+</div>
+
+<h4>技术实现</h4>
+
+<p>我们建立在操作系统级原语之上：</p>
+
+<ul>
+<li><strong>Linux bubblewrap</strong>：提供进程隔离能力</li>
+<li><strong>MacOS seatbelt</strong>：提供 macOS 平台的沙箱支持</li>
+</ul>
+
+<h4>覆盖范围</h4>
+
+<p>这些保护措施不仅涵盖 Claude Code 的直接交互，还涵盖命令生成的任何脚本、程序或子进程。</p>
+
+<div class="card-container">
+    <div class="card" style="flex:1;">
+        <div class="card-icon">📖</div>
+        <div class="card-title">文件系统隔离</div>
+        <div class="card-content">允许对当前工作目录的读写访问，但阻止修改其外的任何文件</div>
+    </div>
+    <div class="card" style="flex:1;">
+        <div class="card-icon">🔒</div>
+        <div class="card-title">网络隔离</div>
+        <div class="card-content">仅允许通过 Unix 域套接字连接到代理服务器进行互联网访问</div>
+    </div>
+</div>
+
+<h4>安全保证</h4>
+
+<blockquote>
+💡 <strong>关键特性</strong>：沙箱化确保即使是成功的提示注入也被完全隔离，无法影响整体用户安全性。
+</blockquote>
+
+<h3>4.2 Claude Code 网页版</h3>
+
+<p>在云端的安全沙箱中运行 Claude Code。Claude Code 网页版在隔离的沙箱中执行每个 Claude Code 会话，敏感凭证（如 git 凭证或签名密钥）永远不会与 Claude Code 一起出现在沙箱中。</p>
+
+<div class="chart">
+    <div class="chart-subtitle">网页版安全架构</div>
+    <div class="flowchart">
+        <div class="flow-row">
+            <div class="flow-node node-blue">用户凭证</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-purple">安全代理验证</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-node node-green">GitHub API</div>
+        </div>
+    </div>
+</div>
+
+<h4>Git 集成安全</h4>
+
+<p>Claude Code 的 Git 集成通过安全代理服务路由命令，该代理验证：</p>
+
+<ul>
+<li>认证令牌的有效性</li>
+<li>分支名称的正确性</li>
+<li>仓库目标的安全性</li>
+</ul>
+
+<blockquote>
+💡 <strong>优势</strong>：即使沙箱中运行的代码被入侵，用户也能免受进一步伤害。
+</blockquote>
+
+<hr/>
+
+<h2>五、开始使用</h2>
+
+<h3>5.1 启用沙箱化</h3>
+
+<pre><code># 在 Claude Code 中运行
+/sandbox</code></pre>
+
+<h3>5.2 使用网页版</h3>
+
+<p>访问 <a href="https://claude.ai/code" target="_blank">claude.ai/code</a> 体验 Claude Code 网页版。</p>
+
+<h3>5.3 为自己的 Agent 集成沙箱</h3>
+
+<p>为了帮助其他团队构建更安全的 Agent，我们已经开源了沙箱运行时。</p>
+
+<div class="card-container">
+    <div class="framework-card">
+        <div class="framework-name">GitHub</div>
+        <div class="framework-desc">获取开源沙箱运行时代码</div>
+    </div>
+    <div class="framework-card">
+        <div class="framework-name">文档</div>
+        <div class="framework-desc">了解更多技术细节</div>
+    </div>
+</div>
+
+<blockquote>
+💡 <strong>建议</strong>：其他团队应考虑采用这项技术来增强其 Agent 的安全态势。
+</blockquote>
+
+<hr/>
+
+<h2>六、总结</h2>
+
+<div class="card-container">
+    <div class="card" style="flex:1;background:#28a745;color:white;border:none;">
+        <div class="card-title" style="color:white;">🔐 双层隔离</div>
+        <div class="card-content" style="color:white;">文件系统 + 网络隔离</div>
+    </div>
+    <div class="card" style="flex:1;background:#667eea;color:white;border:none;">
+        <div class="card-title" style="color:white;">⚡ 效率提升</div>
+        <div class="card-content" style="color:white;">减少84%权限提示</div>
+    </div>
+    <div class="card" style="flex:1;background:#764ba2;color:white;border:none;">
+        <div class="card-title" style="color:white;">🛡️ 安全保障</div>
+        <div class="card-content" style="color:white;">提示注入完全隔离</div>
+    </div>
+</div>
+
+<p>新的沙箱化 Bash 工具和 Claude Code 网页版为使用 Claude 进行工程工作的开发者提供了安全性和生产力的实质性改进。</p>
+
+<blockquote>
+💡 <strong>最佳实践</strong>：结合 <a href="claude-code-best-practices.html">Claude Code 最佳实践</a> 和沙箱化，构建更安全、更高效的 AI 增强开发工作流。
+</blockquote>
+
+<hr/>
+
+<h3>参考资源</h3>
+
+<ul>
+<li><a href="https://docs.claude.com/en/docs/claude-code/sandboxing" target="_blank">Claude Code 沙箱化文档</a></li>
+<li><a href="https://github.com/anthropic-experimental/sandbox-runtime" target="_blank">开源沙箱运行时</a></li>
+<li><a href="https://claude.ai/code" target="_blank">Claude Code 网页版</a></li>
+</ul>
+
+<hr/>
+
+<p><em>文档生成时间：2026-02-08</em></p>
+<p><em>原文链接：https://www.anthropic.com/engineering/claude-code-sandboxing</em></p>
+</article></main>
+<footer><p>📅 最后更新: 2026-02-08</p><p>Built with ❤️ | 翻译：HinnBot</p></footer>
+</body>
+</html>
